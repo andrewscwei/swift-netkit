@@ -29,6 +29,19 @@ enum Environment: String {
   }
 }
 
+var dependencies: [Package.Dependency] = [
+  .package(url: "https://github.com/Alamofire/Alamofire.git", from: "5.4.3"),
+]
+
+switch Environment.get() {
+case .local:
+  dependencies.append(.package(path: "../BaseKit"))
+case .development:
+  dependencies.append(.package(name: "BaseKit", url: "git@github.com:sybl/swift-basekit", .branch("main")))
+case .production:
+  dependencies.append(.package(name: "BaseKit", url: "git@github.com:sybl/swift-basekit", from: "0.1.0"))
+}
+
 let package = Package(
   name: "NetKit",
   platforms: [.iOS(.v11)],
@@ -37,12 +50,7 @@ let package = Package(
       name: "NetKit",
       targets: ["NetKit"]),
   ],
-  dependencies: [
-    Environment.get() == .local
-      ? .package(path: "../BaseKit")
-      : .package(url: "git@github.com:sybl/swift-basekit", from: "0.1.0"),
-    .package(url: "https://github.com/Alamofire/Alamofire.git", from: "5.4.3"),
-  ],
+  dependencies: dependencies,
   targets: [
     .target(
       name: "NetKit",
