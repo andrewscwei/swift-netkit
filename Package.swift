@@ -1,24 +1,49 @@
 // swift-tools-version:5.3
-// The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
+
+#if os(Linux)
+import Glibc
+#else
+import Darwin.C
+#endif
+
+enum Environment: String {
+  static let `default`: Environment = .local
+
+  case local
+  case development
+  case production
+
+  static func get() -> Environment {
+    if let envPointer = getenv("CI"), String(cString: envPointer) == "true" {
+      return .production
+    }
+    else if let envPointer = getenv("SWIFT_ENV") {
+      let env = String(cString: envPointer)
+      return Environment(rawValue: env) ?? .default
+    }
+    else {
+      return .default
+    }
+  }
+}
 
 let package = Package(
   name: "NetKit",
   platforms: [.iOS(.v11)],
   products: [
-    // Products define the executables and libraries a package produces, and make them visible to other packages.
     .library(
       name: "NetKit",
       targets: ["NetKit"]),
   ],
   dependencies: [
-    .package(path: "../BaseKit"),
+    Environment.get() == .local
+      ? .package(path: "../BaseKit")
+      : .package(url: "git:github.com:sybl/swift-basekit", from: "0.1.0"),
     .package(url: "https://github.com/Alamofire/Alamofire.git", from: "5.4.3"),
   ],
   targets: [
-    // Targets are the basic building blocks of a package. A target can define a module or a test suite.
-    // Targets can depend on other targets in this package, and on products in packages this package depends on.
     .target(
       name: "NetKit",
       dependencies: ["BaseKit", "Alamofire"]),

@@ -1,0 +1,39 @@
+# @see https://circleci.com/docs/2.0/testing-ios/#example-configuration-for-using-fastlane-on-circleci
+
+defaults: &defaults
+  macos:
+    xcode: 12.5.1
+
+version: 2.1
+orbs:
+  slack: circleci/slack@3.4.2
+
+jobs:
+  build:
+    <<: *defaults
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - checkout
+      - restore_cache:
+          key: v2-gems-{{ checksum "Gemfile.lock" }}
+      - run:
+          name: Install Fastlane
+          command: bundle check || bundle install --path vendor/bundle
+      - save_cache:
+          key: v2-gems-{{ checksum "Gemfile.lock" }}
+          paths:
+            - vendor/bundle
+      - run:
+          name: Test
+          command: bundle exec fastlane test
+      - store_artifacts:
+          path: build
+      - store_test_results:
+          path: build/scan
+
+workflows:
+  version: 2.1
+  build:
+    jobs:
+      - build:
+          context: ios
