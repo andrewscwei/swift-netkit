@@ -40,7 +40,7 @@ let package = Package(
   dependencies: [
     Environment.get() == .local
       ? .package(path: "../BaseKit")
-      : .package(url: "git:github.com:sybl/swift-basekit", from: "0.1.0"),
+      : .package(url: "git@github.com:sybl/swift-basekit", from: "0.1.0"),
     .package(url: "https://github.com/Alamofire/Alamofire.git", from: "5.4.3"),
   ],
   targets: [
