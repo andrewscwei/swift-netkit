@@ -56,7 +56,7 @@ public enum NetworkError2: Error {
 }
 
 extension NetworkError2: CustomNSError {
-  public  static var errorDomain: String { "network" }
+  public static var errorDomain: String { "network" }
 
   public  var errorCode: Int {
     switch self {
