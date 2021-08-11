@@ -96,7 +96,7 @@ public class NetworkTransport {
   ///                      `parseResponse(_:statusCode:)`.
   ///
   /// - Returns: The `Request` object.
-  @discardableResult public func request<T: Codable>(_ urlRequest: URLRequestConvertible, queue: DispatchQueue = .global(qos: .utility), tag: String = UUID().uuidString, overwriteExisting: Bool = true, responseHandler: @escaping (Result<T, Error>) -> Void = { _ in }) -> Request {
+  @discardableResult public func request<T: Decodable>(_ urlRequest: URLRequestConvertible, queue: DispatchQueue = .global(qos: .utility), tag: String = UUID().uuidString, overwriteExisting: Bool = true, responseHandler: @escaping (Result<T, Error>) -> Void = { _ in }) -> Request {
     if !overwriteExisting, let existingRequest = getActiveRequest(tag: tag) { return existingRequest }
 
     removeRequestFromQueue(tag: tag)
@@ -233,12 +233,12 @@ public class NetworkTransport {
     }
   }
 
-  /// Parses the request repsonse into a `Result` when the response data type is `Codable`.
+  /// Parses the request repsonse into a `Result` when the response data type is `Decodable`.
   ///
   /// - Parameter response: The request response.
   ///
   /// - Returns: The `Result`.
-  func parseResponse<T: Codable>(_ response: AFDataResponse<Data?>) -> Result<T, Error> {
+  func parseResponse<T: Decodable>(_ response: AFDataResponse<Data?>) -> Result<T, Error> {
     if let error = parseResponseError(response) {
       return .failure(error)
     }
@@ -280,7 +280,7 @@ public class NetworkTransport {
   /// - Throws: When there is an error decoding the data.
   ///
   /// - Returns: The decoded object of type `T`.
-  func parseResponseData<T: Codable>(_ response: AFDataResponse<Data?>) throws -> T {
+  func parseResponseData<T: Decodable>(_ response: AFDataResponse<Data?>) throws -> T {
     guard let data = response.data else { throw NetworkError.decoding(code: response.response?.statusCode) }
     return try JSONDecoder().decode(T.self, from: data)
   }

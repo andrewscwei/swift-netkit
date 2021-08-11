@@ -26,7 +26,7 @@ extension NetworkTransport {
   ///                      `parseResponse(_:statusCode:)`.
   ///
   /// - Returns: The `Request` object.
-  @discardableResult public func upload<T: Codable>(_ urlRequest: URLRequestConvertible, parameters: [String: Any] = [:], queue: DispatchQueue = .global(qos: .utility), tag: String = UUID().uuidString, overwriteExisting: Bool = true, responseHandler: @escaping (Result<T, Error>) -> Void = { _ in }) -> Request {
+  @discardableResult public func upload<T: Decodable>(_ urlRequest: URLRequestConvertible, parameters: [String: Any] = [:], queue: DispatchQueue = .global(qos: .utility), tag: String = UUID().uuidString, overwriteExisting: Bool = true, responseHandler: @escaping (Result<T, Error>) -> Void = { _ in }) -> Request {
     if !overwriteExisting, let existingRequest = getActiveRequest(tag: tag) { return existingRequest }
 
     removeRequestFromQueue(tag: tag)
