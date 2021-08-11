@@ -1,16 +1,17 @@
-// © Andrew Wei / MIT License
+// © Sybl
 
 import Alamofire
 import BaseKit
 import Foundation
 
-/// Types conforming to this protocol governs certain behaviors of a `NetworkService` and intercepts its requests prior to placing them.
-public protocol NetworkServicePolicy: Alamofire.RequestInterceptor {
+/// Types conforming to this protocol governs certain behaviors of a `NetworkTransport` and intercepts its requests
+/// prior to placing them.
+public protocol NetworkTransportPolicy: Alamofire.RequestInterceptor {
 
-  /// Host to apply to every request placed by the `NetworkService` using this policy.
+  /// Host to apply to every request placed by the `NetworkTransport` using this policy.
   var host: String? { get }
 
-  /// Headers to attach to every request placed by the `NetworkService` using this policy.
+  /// Headers to attach to every request placed by the `NetworkTransport` using this policy.
   var headers: [String: String] { get }
 
   /// Parses the decoded data of the response with a valid status code upon a completed request and returns a `Result`.
@@ -20,10 +21,10 @@ public protocol NetworkServicePolicy: Alamofire.RequestInterceptor {
   ///   - statusCode: The HTTP status code of the response.
   ///
   /// - Returns: The `Result`.
-  func parseResponse<T>(_ data: T, statusCode: Int) -> Result<T, NetworkError2>
+  func parseResponse<T>(_ data: T, statusCode: Int) -> Result<T, NetworkError>
 }
 
-extension NetworkServicePolicy {
+extension NetworkTransportPolicy {
 
   public var host: String? { nil }
 
@@ -52,14 +53,16 @@ extension NetworkServicePolicy {
     completion(.success(urlRequest))
   }
 
-  /// Parses the decoded data of the response with a valid status code upon a completed request and returns a `Result`. If the decoded data conforms to `ErrorConvertible` and the status code is within the range of `400` to `599`, a failure will be returned with the error.
+  /// Parses the decoded data of the response with a valid status code upon a completed request and returns a `Result`.
+  /// If the decoded data conforms to `ErrorConvertible` and the status code is within the range of `400` to `599`, a
+  /// failure will be returned with the error.
   ///
   /// - Parameters:
   ///   - data: The decoded data of the response.
   ///   - statusCode: The HTTP status code of the response.
   ///
   /// - Returns: The `Result`.
-  public func parseResponse<T>(_ data: T, statusCode: Int) -> Result<T, NetworkError2> {
+  public func parseResponse<T>(_ data: T, statusCode: Int) -> Result<T, NetworkError> {
     let error = try? (data as? ErrorConvertible)?.asError()
 
     switch statusCode {
