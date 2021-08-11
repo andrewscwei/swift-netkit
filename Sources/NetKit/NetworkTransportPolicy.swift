@@ -21,7 +21,7 @@ public protocol NetworkTransportPolicy: Alamofire.RequestInterceptor {
   ///   - statusCode: The HTTP status code of the response.
   ///
   /// - Returns: The `Result`.
-  func parseResponse<T>(_ data: T, statusCode: Int) -> Result<T, NetworkError>
+  func parseResponse<T>(_ data: T, statusCode: Int) -> Result<T, Error>
 }
 
 extension NetworkTransportPolicy {
@@ -62,17 +62,17 @@ extension NetworkTransportPolicy {
   ///   - statusCode: The HTTP status code of the response.
   ///
   /// - Returns: The `Result`.
-  public func parseResponse<T>(_ data: T, statusCode: Int) -> Result<T, NetworkError> {
+  public func parseResponse<T>(_ data: T, statusCode: Int) -> Result<T, Error> {
     let error = try? (data as? ErrorConvertible)?.asError()
 
     switch statusCode {
-    case 401: return .failure(.unauthorized(code: statusCode, cause: error))
-    case 429: return .failure(.tooManyRequests(code: statusCode, cause: error))
-    case 400..<499: return .failure(.client(code: statusCode, cause: error))
-    case 500..<599: return .failure(.server(code: statusCode, cause: error))
+    case 401: return .failure(NetworkError.unauthorized(code: statusCode, cause: error))
+    case 429: return .failure(NetworkError.tooManyRequests(code: statusCode, cause: error))
+    case 400..<499: return .failure(NetworkError.client(code: statusCode, cause: error))
+    case 500..<599: return .failure(NetworkError.server(code: statusCode, cause: error))
     default:
       if let error = error {
-        return .failure(.client(code: statusCode, cause: error))
+        return .failure(NetworkError.client(code: statusCode, cause: error))
       }
       else {
         return .success(data)

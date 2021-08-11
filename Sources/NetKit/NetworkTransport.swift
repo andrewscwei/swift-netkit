@@ -89,7 +89,7 @@ public class NetworkTransport {
   ///                      `parseResponse(_:statusCode:)`.
   ///
   /// - Returns: The `Request` object.
-  @discardableResult public func request<T: Codable>(_ urlRequest: URLRequestConvertible, queue: DispatchQueue = .global(qos: .utility), tag: String = UUID().uuidString, overwriteExisting: Bool = true, responseHandler: @escaping (Result<T, NetworkError>) -> Void = { _ in }) -> Request {
+  @discardableResult public func request<T: Codable>(_ urlRequest: URLRequestConvertible, queue: DispatchQueue = .global(qos: .utility), tag: String = UUID().uuidString, overwriteExisting: Bool = true, responseHandler: @escaping (Result<T, Error>) -> Void = { _ in }) -> Request {
     if !overwriteExisting, let existingRequest = getActiveRequest(tag: tag) { return existingRequest }
 
     removeRequestFromQueue(tag: tag)
@@ -99,7 +99,7 @@ public class NetworkTransport {
     let request = AF.request(urlRequest, interceptor: policy).response(queue: queue) { [weak self] response in
       guard let weakSelf = self else { return responseHandler(.failure(NetworkError.unknown)) }
 
-      let result: Result<T, NetworkError> = weakSelf.parseResponse(response)
+      let result: Result<T, Error> = weakSelf.parseResponse(response)
       log(.debug) { "Sending request to endpoint \"\(urlRequest)\"... OK: \(result)" }
       responseHandler(result)
     }
@@ -125,7 +125,7 @@ public class NetworkTransport {
   ///                      `parseResponse(_:statusCode:)`.
   ///
   /// - Returns: The `Request` object.
-  @discardableResult public func request(_ urlRequest: URLRequestConvertible, queue: DispatchQueue = .global(qos: .utility), tag: String = UUID().uuidString, overwriteExisting: Bool = true, responseHandler: @escaping (Result<Any, NetworkError>) -> Void = { _ in }) -> Request {
+  @discardableResult public func request(_ urlRequest: URLRequestConvertible, queue: DispatchQueue = .global(qos: .utility), tag: String = UUID().uuidString, overwriteExisting: Bool = true, responseHandler: @escaping (Result<Any, Error>) -> Void = { _ in }) -> Request {
     if !overwriteExisting, let existingRequest = getActiveRequest(tag: tag) { return existingRequest }
 
     removeRequestFromQueue(tag: tag)
@@ -135,7 +135,7 @@ public class NetworkTransport {
     let request = AF.request(urlRequest, interceptor: policy).response(queue: queue) { [weak self] response in
       guard let weakSelf = self else { return responseHandler(.failure(NetworkError.unknown)) }
 
-      let result: Result<Any, NetworkError> = weakSelf.parseResponse(response)
+      let result: Result<Any, Error> = weakSelf.parseResponse(response)
       log(.debug) { "Sending request to endpoint \"\(urlRequest)\"... OK: \(result)" }
       responseHandler(result)
     }
@@ -161,7 +161,7 @@ public class NetworkTransport {
   ///                      `parseResponse(_:statusCode:)`.
   ///
   /// - Returns: The `Request` object.
-  @discardableResult public func request(_ urlRequest: URLRequestConvertible, queue: DispatchQueue = .global(qos: .utility), tag: String = UUID().uuidString, overwriteExisting: Bool = true, responseHandler: @escaping (Result<Void, NetworkError>) -> Void = { _ in }) -> Request {
+  @discardableResult public func request(_ urlRequest: URLRequestConvertible, queue: DispatchQueue = .global(qos: .utility), tag: String = UUID().uuidString, overwriteExisting: Bool = true, responseHandler: @escaping (Result<Void, Error>) -> Void = { _ in }) -> Request {
     if !overwriteExisting, let existingRequest = getActiveRequest(tag: tag) { return existingRequest }
 
     removeRequestFromQueue(tag: tag)
@@ -169,9 +169,9 @@ public class NetworkTransport {
     log(.debug) { "Sending request to endpoint \"\(urlRequest)\"..." }
 
     let request = AF.request(urlRequest, interceptor: policy).response(queue: queue) { [weak self] response in
-      guard let weakSelf = self else { return responseHandler(.failure(.unknown)) }
+      guard let weakSelf = self else { return responseHandler(.failure(NetworkError.unknown)) }
 
-      let result: Result<Void, NetworkError> = weakSelf.parseResponse(response)
+      let result: Result<Void, Error> = weakSelf.parseResponse(response)
       log(.debug) { "Sending request to endpoint \"\(urlRequest)\"... OK: \(result)" }
       responseHandler(result)
     }
@@ -185,7 +185,7 @@ public class NetworkTransport {
   /// - Parameter response: The request response.
   ///
   /// - Returns: The `Result`.
-  func parseResponse(_ response: AFDataResponse<Data?>) -> Result<Any, NetworkError> {
+  func parseResponse(_ response: AFDataResponse<Data?>) -> Result<Any, Error> {
     if let error = parseResponseError(response) {
       return .failure(error)
     }
@@ -199,12 +199,12 @@ public class NetworkTransport {
           return .failure(error)
         }
         else {
-          return .failure(.decoding(code: statusCode, cause: error))
+          return .failure(NetworkError.decoding(code: statusCode, cause: error))
         }
       }
     }
     else {
-      return .failure(.unknown)
+      return .failure(NetworkError.unknown)
     }
   }
 
@@ -214,7 +214,7 @@ public class NetworkTransport {
   /// - Parameter response: The request response.
   ///
   /// - Returns: The `Result`.
-  func parseResponse(_ response: AFDataResponse<Data?>) -> Result<Void, NetworkError> {
+  func parseResponse(_ response: AFDataResponse<Data?>) -> Result<Void, Error> {
     if let error = parseResponseError(response) {
       return .failure(error)
     }
@@ -222,7 +222,7 @@ public class NetworkTransport {
       return policy.parseResponse((), statusCode: statusCode)
     }
     else {
-      return .failure(.unknown)
+      return .failure(NetworkError.unknown)
     }
   }
 
@@ -231,7 +231,7 @@ public class NetworkTransport {
   /// - Parameter response: The request response.
   ///
   /// - Returns: The `Result`.
-  func parseResponse<T: Codable>(_ response: AFDataResponse<Data?>) -> Result<T, NetworkError> {
+  func parseResponse<T: Codable>(_ response: AFDataResponse<Data?>) -> Result<T, Error> {
     if let error = parseResponseError(response) {
       return .failure(error)
     }
@@ -245,12 +245,12 @@ public class NetworkTransport {
           return .failure(error)
         }
         else {
-          return .failure(.decoding(code: statusCode, cause: error))
+          return .failure(NetworkError.decoding(code: statusCode, cause: error))
         }
       }
     }
     else {
-      return .failure(.unknown)
+      return .failure(NetworkError.unknown)
     }
   }
 
@@ -284,21 +284,21 @@ public class NetworkTransport {
   /// - Parameter response: The request response.
   ///
   /// - Returns: The `NetworkError`, if any.
-  func parseResponseError(_ response: AFDataResponse<Data?>) -> NetworkError? {
+  func parseResponseError(_ response: AFDataResponse<Data?>) -> Error? {
     guard let error = response.error else { return nil }
 
     let statusCode = response.response?.statusCode
 
     switch (error as NSError).code {
-    case URLError.Code.cancelled.rawValue: return .cancelled(code: statusCode, cause: error)
-    case URLError.Code.notConnectedToInternet.rawValue: return .noNetwork(code: statusCode, cause: error)
-    case URLError.Code.timedOut.rawValue: return .timeout(code: statusCode, cause: error)
+    case URLError.Code.cancelled.rawValue: return NetworkError.cancelled(code: statusCode, cause: error)
+    case URLError.Code.notConnectedToInternet.rawValue: return NetworkError.noNetwork(code: statusCode, cause: error)
+    case URLError.Code.timedOut.rawValue: return NetworkError.timeout(code: statusCode, cause: error)
     default:
       if case .explicitlyCancelled = error {
-        return .cancelled(code: statusCode, cause: error)
+        return NetworkError.cancelled(code: statusCode, cause: error)
       }
       else {
-        return .decoding(code: statusCode, cause: error)
+        return NetworkError.decoding(code: statusCode, cause: error)
       }
     }
   }

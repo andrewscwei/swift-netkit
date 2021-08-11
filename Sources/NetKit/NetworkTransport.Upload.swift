@@ -1,7 +1,7 @@
 // © Sybl
 
-import BaseKit
 import Alamofire
+import BaseKit
 import Foundation
 import SwiftyJSON
 
@@ -26,7 +26,7 @@ extension NetworkTransport {
   ///                      `parseResponse(_:statusCode:)`.
   ///
   /// - Returns: The `Request` object.
-  @discardableResult public func upload<T: Codable>(_ urlRequest: URLRequestConvertible, parameters: [String: Any] = [:], queue: DispatchQueue = .global(qos: .utility), tag: String = UUID().uuidString, overwriteExisting: Bool = true, responseHandler: @escaping (Result<T, NetworkError>) -> Void = { _ in }) -> Request {
+  @discardableResult public func upload<T: Codable>(_ urlRequest: URLRequestConvertible, parameters: [String: Any] = [:], queue: DispatchQueue = .global(qos: .utility), tag: String = UUID().uuidString, overwriteExisting: Bool = true, responseHandler: @escaping (Result<T, Error>) -> Void = { _ in }) -> Request {
     if !overwriteExisting, let existingRequest = getActiveRequest(tag: tag) { return existingRequest }
 
     removeRequestFromQueue(tag: tag)
@@ -34,18 +34,18 @@ extension NetworkTransport {
     log(.debug) { "Sending multipart request to endpoint \"\(urlRequest)\"..." }
 
     let request = AF.upload(multipartFormData: { [weak self] formData in
-      guard let weakSelf = self else { return responseHandler(.failure(.unknown)) }
+      guard let weakSelf = self else { return responseHandler(.failure(NetworkError.unknown)) }
 
       do {
         try weakSelf.appendToMultipartFormData(formData, parameters: parameters)
       }
       catch {
-        return responseHandler(.failure(.encoding(cause: error)))
+        return responseHandler(.failure(NetworkError.encoding(cause: error)))
       }
     }, with: urlRequest, interceptor: policy).response(queue: queue) { [weak self] response in
-      guard let weakSelf = self else { return responseHandler(.failure(.unknown)) }
+      guard let weakSelf = self else { return responseHandler(.failure(NetworkError.unknown)) }
 
-      let result: Result<T, NetworkError> = weakSelf.parseResponse(response)
+      let result: Result<T, Error> = weakSelf.parseResponse(response)
       log(.debug) { "Sending multipart request to endpoint \"\(urlRequest)\"... OK: \(result)" }
       responseHandler(result)
     }
@@ -72,7 +72,7 @@ extension NetworkTransport {
   ///                      `parseResponse(_:statusCode:)`.
   ///
   /// - Returns: The `Request` object.
-  @discardableResult public func upload(_ urlRequest: URLRequestConvertible, parameters: [String: Any] = [:], queue: DispatchQueue = .global(qos: .utility), tag: String = UUID().uuidString, overwriteExisting: Bool = true, responseHandler: @escaping (Result<Any, NetworkError>) -> Void = { _ in }) -> Request {
+  @discardableResult public func upload(_ urlRequest: URLRequestConvertible, parameters: [String: Any] = [:], queue: DispatchQueue = .global(qos: .utility), tag: String = UUID().uuidString, overwriteExisting: Bool = true, responseHandler: @escaping (Result<Any, Error>) -> Void = { _ in }) -> Request {
     if !overwriteExisting, let existingRequest = getActiveRequest(tag: tag) { return existingRequest }
 
     removeRequestFromQueue(tag: tag)
@@ -80,18 +80,18 @@ extension NetworkTransport {
     log(.debug) { "Sending multipart request to endpoint \"\(urlRequest)\"..." }
 
     let request = AF.upload(multipartFormData: { [weak self] formData in
-      guard let weakSelf = self else { return responseHandler(.failure(.unknown)) }
+      guard let weakSelf = self else { return responseHandler(.failure(NetworkError.unknown)) }
 
       do {
         try weakSelf.appendToMultipartFormData(formData, parameters: parameters)
       }
       catch {
-        return responseHandler(.failure(.encoding(cause: error)))
+        return responseHandler(.failure(NetworkError.encoding(cause: error)))
       }
     }, with: urlRequest, interceptor: policy).response(queue: queue) { [weak self] response in
-      guard let weakSelf = self else { return responseHandler(.failure(.unknown)) }
+      guard let weakSelf = self else { return responseHandler(.failure(NetworkError.unknown)) }
 
-      let result: Result<Any, NetworkError> = weakSelf.parseResponse(response)
+      let result: Result<Any, Error> = weakSelf.parseResponse(response)
       log(.debug) { "Sending multipart request to endpoint \"\(urlRequest)\"... OK: \(result)" }
       responseHandler(result)
     }
@@ -119,7 +119,7 @@ extension NetworkTransport {
   ///                      `parseResponse(_:statusCode:)`.
   ///
   /// - Returns: The `Request` object.
-  @discardableResult public func upload(_ urlRequest: URLRequestConvertible, parameters: [String: Any] = [:], queue: DispatchQueue = .global(qos: .utility), tag: String = UUID().uuidString, overwriteExisting: Bool = true, responseHandler: @escaping (Result<Void, NetworkError>) -> Void = { _ in }) -> Request {
+  @discardableResult public func upload(_ urlRequest: URLRequestConvertible, parameters: [String: Any] = [:], queue: DispatchQueue = .global(qos: .utility), tag: String = UUID().uuidString, overwriteExisting: Bool = true, responseHandler: @escaping (Result<Void, Error>) -> Void = { _ in }) -> Request {
     if !overwriteExisting, let existingRequest = getActiveRequest(tag: tag) { return existingRequest }
 
     removeRequestFromQueue(tag: tag)
@@ -127,18 +127,18 @@ extension NetworkTransport {
     log(.debug) { "Sending multipart request to endpoint \"\(urlRequest)\"..." }
 
     let request = AF.upload(multipartFormData: { [weak self] formData in
-      guard let weakSelf = self else { return responseHandler(.failure(.unknown)) }
+      guard let weakSelf = self else { return responseHandler(.failure(NetworkError.unknown)) }
 
       do {
         try weakSelf.appendToMultipartFormData(formData, parameters: parameters)
       }
       catch {
-        return responseHandler(.failure(.encoding(cause: error)))
+        return responseHandler(.failure(NetworkError.encoding(cause: error)))
       }
     }, with: urlRequest, interceptor: policy).response(queue: queue) { [weak self] response in
-      guard let weakSelf = self else { return responseHandler(.failure(.unknown)) }
+      guard let weakSelf = self else { return responseHandler(.failure(NetworkError.unknown)) }
 
-      let result: Result<Void, NetworkError> = weakSelf.parseResponse(response)
+      let result: Result<Void, Error> = weakSelf.parseResponse(response)
       log(.debug) { "Sending multipart request to endpoint \"\(urlRequest)\"... OK: \(result)" }
       responseHandler(result)
     }
