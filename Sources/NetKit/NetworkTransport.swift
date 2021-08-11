@@ -5,6 +5,13 @@ import BaseKit
 import Foundation
 
 /// An object delegated to making network requests.
+///
+/// When parsing a response data of type `T`, if `T` conforms to `ErrorConvertible` and an error can be constructed from
+/// the data, expect a `Result.failure` in the response handlers with an appropriate `NetworkError` wrapping the
+/// constructed error as its `cause`. As such, it is best to handle server provided error messages in the
+/// `ErrorConvertible` data type and unwrap the message from the `NetworkError` when a response is received. To simplify
+/// this process, it is recommended to use an extension for `NetworkError` specific to the application to automatically
+/// extract the error message.
 public class NetworkTransport {
 
   /// Default `NetworkTransportPolicy` to use if one is not provided.
