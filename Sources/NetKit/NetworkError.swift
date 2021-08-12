@@ -2,18 +2,20 @@
 
 import Foundation
 
-/// An `Error` conforming enum consiting of errors thrown by `NetworkTransport` operations. By default, none of the
-/// errors have an error description. It is up to the application to extend this error to conform to `LocalizedError`
-/// and provide its own localized descriptions.
+/// An `Error` conforming enum consiting of errors thrown by `NetworkTransport` operations. By
+/// default, none of the errors have an error description. It is up to the application to extend
+/// this error to conform to `LocalizedError` and provide its own localized descriptions.
 public enum NetworkError: Error {
 
   /// A type of network error whose nature is unknown.
   case unknown(code: Int? = nil, cause: Error? = nil)
 
-  /// A type of network error thrown when there is an authorization failure of some sort, i.e. 401 status code.
+  /// A type of network error thrown when there is an authorization failure of some sort, i.e. 401
+  /// status code.
   case unauthorized(code: Int? = nil, cause: Error? = nil)
 
-  /// A type of network error thrown when there are too many consecutive same requests within a short time frame.
+  /// A type of network error thrown when there are too many consecutive same requests within a
+  /// short time frame.
   case tooManyRequests(code: Int? = nil, cause: Error? = nil)
 
   /// A type of network error thrown when there is no network.
@@ -25,8 +27,8 @@ public enum NetworkError: Error {
   /// A type of network error thrown when the network request is timed out.
   case timeout(code: Int? = nil, cause: Error? = nil)
 
-  /// A type of error thrown when failing to encode request parameters (i.e. query strings, body params, URL params,
-  /// etc.).
+  /// A type of error thrown when failing to encode request parameters (i.e. query strings, body
+  /// params, URL params, etc.).
   case encoding(code: Int? = nil, cause: Error? = nil)
 
   /// A type of network error thrown when decoding the response of the request.
@@ -47,10 +49,12 @@ public enum NetworkError: Error {
   /// A type of network error whose nature is unknown.
   public static let unknown: NetworkError = .unknown()
 
-/// A type of network error thrown when there is an authorization failure of some sort, i.e. 401 status code.
+/// A type of network error thrown when there is an authorization failure of some sort, i.e. 401
+/// status code.
   public static let unauthorized: NetworkError = .unauthorized()
 
-  /// A type of network error thrown when there are too many consecutive same requests within a short time frame.
+  /// A type of network error thrown when there are too many consecutive same requests within a
+  /// short time frame.
   public static let tooManyRequests: NetworkError = .tooManyRequests()
 
   /// A type of network error thrown when there is no network.
@@ -62,8 +66,8 @@ public enum NetworkError: Error {
   /// A type of network error thrown when the network request is timed out.
   public static let timeout: NetworkError = .timeout()
 
-  /// A type of error thrown when failing to encode request parameters (i.e. query strings, body params, URL params,
-  /// etc.).
+  /// A type of error thrown when failing to encode request parameters (i.e. query strings, body
+  /// params, URL params, etc.).
   public static let encoding: NetworkError = .encoding()
 
   /// A type of network error thrown when decoding the response of the request.

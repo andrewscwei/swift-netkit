@@ -6,12 +6,13 @@ import Foundation
 
 /// An object delegated to making network requests.
 ///
-/// When parsing a response data of type `T`, if `T` conforms to `ErrorConvertible` and an error can be constructed from
-/// the data, expect a `Result.failure` in the response handlers with an appropriate `NetworkError` wrapping the
-/// constructed error as its `cause`. As such, it is best to handle server provided error messages in the
-/// `ErrorConvertible` data type and unwrap the message from the `NetworkError` when a response is received. To simplify
-/// this process, it is recommended to use an extension for `NetworkError` specific to the application to automatically
-/// extract the error message.
+/// When parsing a response data of type `T`, if `T` conforms to `ErrorConvertible` and an error can
+/// be constructed from the data, expect a `Result.failure` in the response handlers with an
+/// appropriate `NetworkError` wrapping the constructed error as its `cause`. As such, it is best to
+/// handle server provided error messages in the `ErrorConvertible` data type and unwrap the message
+/// from the `NetworkError` when a response is received. To simplify this process, it is recommended
+/// to use an extension for `NetworkError` specific to the application to automatically extract the
+/// error message.
 public class NetworkTransport {
 
   /// Default `NetworkTransportPolicy` to use if one is not provided.
@@ -29,8 +30,8 @@ public class NetworkTransport {
     self.policy = policy
   }
 
-  /// Gets the active request by its tag name. An active request refers to an existing request that is not cancelled,
-  /// finished or suspended.
+  /// Gets the active request by its tag name. An active request refers to an existing request that
+  /// is not cancelled, finished or suspended.
   ///
   /// - Parameter tag: The tag associated with the request.
   ///
@@ -45,11 +46,11 @@ public class NetworkTransport {
   /// - Parameters:
   ///   - request: The request to add.
   ///   - tag: The tag to associate with the request.
-  ///   - overwriteExisting: Specifies if the new request should overwrite an existing one with the same tag. The
-  ///                        existing request will be subsequently cancelled.
+  ///   - overwriteExisting: Specifies if the new request should overwrite an existing one with the
+  ///                        same tag. The existing request will be subsequently cancelled.
   ///
-  /// - Returns: Either the request that was added, or the existing request with the specified tag name if
-  ///            `overwriteExisting` is `false`.
+  /// - Returns: Either the request that was added, or the existing request with the specified tag
+  ///            name if `overwriteExisting` is `false`.
   @discardableResult func addRequestToQueue(request: Request, tag: String, overwriteExisting: Bool = true) -> Request {
     if !overwriteExisting, let existingRequest = getActiveRequest(tag: tag) { return existingRequest }
     requestQueue[tag]?.cancel()
@@ -78,21 +79,23 @@ public class NetworkTransport {
     requestQueue = [:]
   }
 
-  /// Sends an async request based on the `URLRequestConvertible` provided and parses the response as a `Result` with a
-  /// success value of codable type `T`.
+  /// Sends an async request based on the `URLRequestConvertible` provided and parses the response
+  /// as a `Result` with a success value of codable type `T`.
   ///
   /// - Parameters:
   ///   - urlRequest: The `URLRequestConvertible`.
   ///   - queue: The dispatch queue used for placing the request.
   ///   - tag: Tag for identifying this request—if unspecified, a random UUID will be used.
-  ///   - overwriteExisting: Indicates if this request should overwrite an existing request with the same tag. If so,
-  ///                        the existing request will be cancelled and this new request will be placed. If `false` and
-  ///                        an existing request is active, a new request will not be placed and the existing active
-  ///                        request will be returned immediately instead.
-  ///   - responseHandler: Handler invoked when the request completes and a response is received. This handler
-  ///                      transforms the raw response into a `Result` with codable type `T` as its success value and a
-  ///                      `NetworkError` as its failure value. More fine-grained parsing using the response status code
-  ///                      is controlled by the active `NetworkTransportPolicy`, via its member
+  ///   - overwriteExisting: Indicates if this request should overwrite an existing request with the
+  ///                        same tag. If so, the existing request will be cancelled and this new
+  ///                        request will be placed. If `false` and an existing request is active, a
+  ///                        new request will not be placed and the existing active request will be
+  ///                        returned immediately instead.
+  ///   - responseHandler: Handler invoked when the request completes and a response is received.
+  ///                      This handler transforms the raw response into a `Result` with codable
+  ///                      type `T` as its success value and a `NetworkError` as its failure value.
+  ///                      More fine-grained parsing using the response status code is controlled by
+  ///                      the active `NetworkTransportPolicy`, via its member
   ///                      `parseResponse(_:statusCode:)`.
   ///
   /// - Returns: The `Request` object.
@@ -114,21 +117,23 @@ public class NetworkTransport {
     return addRequestToQueue(request: request, tag: tag)
   }
 
-  /// Sends an async request based on the `URLRequestConvertible` provided and parses the response as a `Result` with a
-  /// success value of a JSON decodable object.
+  /// Sends an async request based on the `URLRequestConvertible` provided and parses the response
+  /// as a `Result` with a success value of a JSON decodable object.
   ///
   /// - Parameters:
   ///   - urlRequest: The `URLRequestConvertible`.
   ///   - queue: The dispatch queue used for placing the request.
   ///   - tag: Tag for identifying this request—if unspecified, a random UUID will be used.
-  ///   - overwriteExisting: Indicates if this request should overwrite an existing request with the same tag. If so,
-  ///                        the existing request will be cancelled and this new request will be placed. If `false` and
-  ///                        an existing request is active, a new request will not be placed and the existing active
-  ///                        request will be returned immediately instead.
-  ///   - responseHandler: Handler invoked when the request completes and a response is received. This handler
-  ///                      transforms the raw response into a `Result` with a JSON decodable object as its success value
-  ///                      and a `NetworkError` as its failure value. More fine-grained parsing using the response
-  ///                      status code is controlled by the active `NetworkTransportPolicy`, via its member
+  ///   - overwriteExisting: Indicates if this request should overwrite an existing request with the
+  ///                        same tag. If so, the existing request will be cancelled and this new
+  ///                        request will be placed. If `false` and an existing request is active, a
+  ///                        new request will not be placed and the existing active request will be
+  ///                        returned immediately instead.
+  ///   - responseHandler: Handler invoked when the request completes and a response is received.
+  ///                      This handler transforms the raw response into a `Result` with a JSON
+  ///                      decodable object as its success value and a `NetworkError` as its failure
+  ///                      value. More fine-grained parsing using the response status code is
+  ///                      controlled by the active `NetworkTransportPolicy`, via its member
   ///                      `parseResponse(_:statusCode:)`.
   ///
   /// - Returns: The `Request` object.
@@ -150,21 +155,24 @@ public class NetworkTransport {
     return addRequestToQueue(request: request, tag: tag)
   }
 
-  /// Sends an async request based on the `URLRequestConvertible` provided and parses the response as a `Result` with no
-  /// success value (i.e. when the payload is discardable or when the status code is expected to be `204`).
+  /// Sends an async request based on the `URLRequestConvertible` provided and parses the response
+  /// as a `Result` with no success value (i.e. when the payload is discardable or when the status
+  /// code is expected to be `204`).
   ///
   /// - Parameters:
   ///   - urlRequest: The `URLRequestConvertible`.
   ///   - queue: The dispatch queue used for placing the request.
   ///   - tag: Tag for identifying this request—if unspecified, a random UUID will be used.
-  ///   - overwriteExisting: Indicates if this request should overwrite an existing request with the same tag. If so,
-  ///                        the existing request will be cancelled and this new request will be placed. If `false` and
-  ///                        an existing request is active, a new request will not be placed and the existing active
-  ///                        request will be returned immediately instead.
-  ///   - responseHandler: Handler invoked when the request completes and a response is received. This handler
-  ///                      transforms the raw response into a `Result` with void as its success value and a
-  ///                      `NetworkError` as its failure value. More fine-grained parsing using the response status code
-  ///                      is controlled by the active `NetworkTransportPolicy`, via its member
+  ///   - overwriteExisting: Indicates if this request should overwrite an existing request with the
+  ///                        same tag. If so, the existing request will be cancelled and this new
+  ///                        request will be placed. If `false` and an existing request is active, a
+  ///                        new request will not be placed and the existing active request will be
+  ///                        returned immediately instead.
+  ///   - responseHandler: Handler invoked when the request completes and a response is received.
+  ///                      This handler transforms the raw response into a `Result` with void as its
+  ///                      success value and a `NetworkError` as its failure value. More
+  ///                      fine-grained parsing using the response status code is controlled by the
+  ///                      active `NetworkTransportPolicy`, via its member
   ///                      `parseResponse(_:statusCode:)`.
   ///
   /// - Returns: The `Request` object.
@@ -186,8 +194,8 @@ public class NetworkTransport {
     return addRequestToQueue(request: request, tag: tag)
   }
 
-  /// Parses the request response into a `Result` when the response data type is `Any`, where an attempt to serialize it
-  /// into a JSON object will occur.
+  /// Parses the request response into a `Result` when the response data type is `Any`, where an
+  /// attempt to serialize it into a JSON object will occur.
   ///
   /// - Parameter response: The request response.
   ///
@@ -215,8 +223,8 @@ public class NetworkTransport {
     }
   }
 
-  /// Parses the request response into a `Result` when the response data type is `Void`, as in there is no response data
-  /// (i.e. a `204` status).
+  /// Parses the request response into a `Result` when the response data type is `Void`, as in there
+  /// is no response data (i.e. a `204` status).
   ///
   /// - Parameter response: The request response.
   ///
@@ -285,8 +293,8 @@ public class NetworkTransport {
     return try JSONDecoder().decode(T.self, from: data)
   }
 
-  /// Transforms the error inside a request response to a `NetworkError2`. If there is no error in the response, `nil`
-  /// is returned.
+  /// Transforms the error inside a request response to a `NetworkError`. If there is no error in
+  /// the response, `nil` is returned.
   ///
   /// - Parameter response: The request response.
   ///

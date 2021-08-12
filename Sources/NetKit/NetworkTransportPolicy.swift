@@ -4,8 +4,8 @@ import Alamofire
 import BaseKit
 import Foundation
 
-/// Types conforming to this protocol governs certain behaviors of a `NetworkTransport` and intercepts its requests
-/// prior to placing them.
+/// Types conforming to this protocol governs certain behaviors of a `NetworkTransport` and
+/// intercepts its requests prior to placing them.
 public protocol NetworkTransportPolicy: Alamofire.RequestInterceptor {
 
   /// Host to apply to every request placed by the `NetworkTransport` using this policy.
@@ -14,7 +14,8 @@ public protocol NetworkTransportPolicy: Alamofire.RequestInterceptor {
   /// Headers to attach to every request placed by the `NetworkTransport` using this policy.
   var headers: [String: String] { get }
 
-  /// Parses the decoded data of the response with a valid status code upon a completed request and returns a `Result`.
+  /// Parses the decoded data of the response with a valid status code upon a completed request and
+  /// returns a `Result`.
   ///
   /// - Parameters:
   ///   - data: The decoded data of the response.
@@ -53,9 +54,9 @@ extension NetworkTransportPolicy {
     completion(.success(urlRequest))
   }
 
-  /// Parses the decoded data of the response with a valid status code upon a completed request and returns a `Result`.
-  /// If the decoded data conforms to `ErrorConvertible` and the status code is within the range of `400` to `599`, a
-  /// failure will be returned with the error.
+  /// Parses the decoded data of the response with a valid status code upon a completed request and
+  /// returns a `Result`. If the decoded data conforms to `ErrorConvertible` and the status code is
+  /// within the range of `400` to `599`, a failure will be returned with the error.
   ///
   /// - Parameters:
   ///   - data: The decoded data of the response.

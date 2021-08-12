@@ -6,8 +6,9 @@ import Foundation
 
 extension NetworkTransport {
 
-  /// Downloads a file from the specified `URLConvertible` to the specified directory, file name and extension. If a
-  /// file already exists at the target path, it is simply replaced with the downloaded file.
+  /// Downloads a file from the specified `URLConvertible` to the specified directory, file name and
+  /// extension. If a file already exists at the target path, it is simply replaced with the
+  /// downloaded file.
   ///
   /// - Parameters:
   ///   - url: The `URLConvertible`.
@@ -15,13 +16,14 @@ extension NetworkTransport {
   ///   - fileName: The name of the file to save to (defaults to a random UUID string).
   ///   - ext: Optional extension of the file to save to.
   ///   - tag: Tag for identifying this request—if unspecified, a random UUID will be used.
-  ///   - overwriteExisting: Indicates if this request should overwrite an existing request with the same tag. If so,
-  ///                        the existing request will be cancelled and this new request will be placed. If `false` and
-  ///                        an existing request is active, a new request will not be placed and the existing active
-  ///                        request will be returned immediately instead.
-  ///   - responseHandler: Handler invoked when the request completes and a response is received. This handler
-  ///                      transforms the raw response into a `Result` with the saved file URL as its success value and
-  ///                      a `NetworkError` as its failure value.
+  ///   - overwriteExisting: Indicates if this request should overwrite an existing request with the
+  ///                        same tag. If so, the existing request will be cancelled and this new
+  ///                        request will be placed. If `false` and an existing request is active, a
+  ///                        new request will not be placed and the existing active request will be
+  ///                        returned immediately instead.
+  ///   - responseHandler: Handler invoked when the request completes and a response is received.
+  ///                      This handler transforms the raw response into a `Result` with the saved
+  ///                      file URL as its success value and a `NetworkError` as its failure value.
   @discardableResult public func download(from url: URLConvertible, to directory: URL, fileName: String = UUID().uuidString, extension ext: String? = nil, tag: String = UUID().uuidString, overwriteExisting: Bool = true, responseHandler: @escaping (Result<URL, NetworkError>) -> Void = { _ in }) -> Request {
     if !overwriteExisting, let existingRequest = getActiveRequest(tag: tag) { return existingRequest }
 
@@ -55,8 +57,9 @@ extension NetworkTransport {
     return addRequestToQueue(request: request, tag: tag)
   }
 
-  /// Downloads a file from the specified `URLRequestConvertible` to the specified directory, file name and extension.
-  /// If a file already exists at the target path, it is simply replaced with the downloaded file.
+  /// Downloads a file from the specified `URLRequestConvertible` to the specified directory, file
+  /// name and extension. If a file already exists at the target path, it is simply replaced with
+  /// the downloaded file.
   ///
   /// - Parameters:
   ///   - urlRequest: The `URLRequestConvertible`.
@@ -64,13 +67,14 @@ extension NetworkTransport {
   ///   - fileName: The name of the file to save to (defaults to a random UUID string).
   ///   - ext: Optional extension of the file to save to.
   ///   - tag: Tag for identifying this request—if unspecified, a random UUID will be used.
-  ///   - overwriteExisting: Indicates if this request should overwrite an existing request with the same tag. If so,
-  ///                        the existing request will be cancelled and this new request will be placed. If `false` and
-  ///                        an existing request is active, a new request will not be placed and the existing active
-  ///                        request will be returned immediately instead.
-  ///   - responseHandler: Handler invoked when the request completes and a response is received. This handler
-  ///                      transforms the raw response into a `Result` with the saved file URL as its success value and
-  ///                      a `NetworkError` as its failure value.
+  ///   - overwriteExisting: Indicates if this request should overwrite an existing request with the
+  ///                        same tag. If so, the existing request will be cancelled and this new
+  ///                        request will be placed. If `false` and an existing request is active, a
+  ///                        new request will not be placed and the existing active request will be
+  ///                        returned immediately instead.
+  ///   - responseHandler: Handler invoked when the request completes and a response is received.
+  ///                      This handler transforms the raw response into a `Result` with the saved
+  ///                      file URL as its success value and a `NetworkError` as its failure value.
   @discardableResult public func download(from urlRequest: URLRequestConvertible, to directory: URL, fileName: String = UUID().uuidString, extension ext: String? = nil, tag: String = UUID().uuidString, overwriteExisting: Bool = true, responseHandler: @escaping (Result<URL, NetworkError>) -> Void = { _ in }) -> Request {
     if !overwriteExisting, let existingRequest = getActiveRequest(tag: tag) { return existingRequest }
 
