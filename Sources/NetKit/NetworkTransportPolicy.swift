@@ -8,11 +8,13 @@ import Foundation
 /// intercepts its requests prior to placing them.
 public protocol NetworkTransportPolicy: Alamofire.RequestInterceptor {
 
-  /// Host to apply to every request placed by the `NetworkTransport` using this policy.
-  var host: String? { get }
+  /// Replaces the host for the specified `URLRequest` and `Session`. Provide a successful `Result`
+  /// of `nil` to leave the original host untouched.
+  func resolveHost(_ urlRequest: URLRequest, for session: Session, completion: @escaping (Result<String?, Error>) -> Void)
 
-  /// Headers to attach to every request placed by the `NetworkTransport` using this policy.
-  var headers: [String: String] { get }
+  /// Modifies the headers for the specified `URLRequest` and `Session`. Headers are added to the
+  /// current request.
+  func resolveHeaders(_ urlRequest: URLRequest, for session: Session, completion: @escaping (Result<[String: String], Error>) -> Void)
 
   /// Parses the decoded data of the response with a valid status code upon a completed request and
   /// returns a `Result`.
@@ -27,31 +29,47 @@ public protocol NetworkTransportPolicy: Alamofire.RequestInterceptor {
 
 extension NetworkTransportPolicy {
 
-  public var host: String? { nil }
+  public func resolveHost(_ urlRequest: URLRequest, for session: Session, completion: @escaping (Result<String?, Error>) -> Void) {
+    completion(.success(nil))
+  }
 
-  public var headers: [String: String] { [:] }
+  public func resolveHeaders(_ urlRequest: URLRequest, for session: Session, completion: @escaping (Result<[String: String], Error>) -> Void) {
+    completion(.success([:]))
+  }
 
   public func adapt(_ urlRequest: URLRequest, for session: Session, completion: @escaping (Result<URLRequest, Error>) -> Void) {
     var urlRequest = urlRequest
 
-    if
-      let host = host,
-      let url = urlRequest.url,
-      let customComponents = URLComponents(string: host),
-      var components = URLComponents(url: url, resolvingAgainstBaseURL: true)
-    {
-      components.scheme = customComponents.scheme
-      components.host = customComponents.host
-      components.port = customComponents.port
+    resolveHost(urlRequest, for: session) { hostResult in
+      switch hostResult {
+      case .failure(let error): return completion(.failure(error))
+      case .success(let host):
+        if
+          let host = host,
+          let url = urlRequest.url,
+          let customComponents = URLComponents(string: host),
+          var components = URLComponents(url: url, resolvingAgainstBaseURL: true)
+        {
+          components.scheme = customComponents.scheme
+          components.host = customComponents.host
+          components.port = customComponents.port
 
-      urlRequest.url = components.url
+          urlRequest.url = components.url
+        }
+
+        resolveHeaders(urlRequest, for: session) { headersResult in
+          switch headersResult {
+          case .failure(let error): return completion(.failure(error))
+          case .success(let headers):
+            for (key, value) in headers {
+              urlRequest.setValue(value, forHTTPHeaderField: key)
+            }
+
+            completion(.success(urlRequest))
+          }
+        }
+      }
     }
-
-    for (key, value) in headers {
-      urlRequest.setValue(value, forHTTPHeaderField: key)
-    }
-
-    completion(.success(urlRequest))
   }
 
   /// Parses the decoded data of the response with a valid status code upon a completed request and
