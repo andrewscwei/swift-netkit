@@ -79,116 +79,139 @@ public class NetworkTransport {
     requestQueue = [:]
   }
 
-  /// Sends an async request based on the `URLRequestConvertible` provided and parses the response
-  /// as a `Result` with a success value of codable type `T`.
+  /// Sends an async request based to the `NetworkEndpoint` provided and parses the response as a
+  /// `Result` with a success value of codable type `T`.
   ///
   /// - Parameters:
-  ///   - urlRequest: The `URLRequestConvertible`.
+  ///   - endpoint: The `NetworkEndpoint`.
   ///   - queue: The dispatch queue used for placing the request.
-  ///   - tag: Tag for identifying this request—if unspecified, a random UUID will be used.
+  ///   - tag: Custom tag for identifying this request. One will be generated automatically if
+  ///          unspecified.
   ///   - overwriteExisting: Indicates if this request should overwrite an existing request with the
   ///                        same tag. If so, the existing request will be cancelled and this new
   ///                        request will be placed. If `false` and an existing request is active, a
   ///                        new request will not be placed and the existing active request will be
   ///                        returned immediately instead.
-  ///   - responseHandler: Handler invoked when the request completes and a response is received.
-  ///                      This handler transforms the raw response into a `Result` with codable
-  ///                      type `T` as its success value and a `NetworkError` as its failure value.
-  ///                      More fine-grained parsing using the response status code is controlled by
-  ///                      the active `NetworkTransportPolicy`, via its member
-  ///                      `parseResponse(_:statusCode:)`.
+  ///   - completion: Handler invoked when the request completes and a response is received. This
+  ///                 handler transforms the raw response into a `Result` with codable type `T` as
+  ///                 its success value and a `NetworkError` as its failure value. More fine-grained
+  ///                 parsing using the response status code is controlled by the active
+  ///                 `NetworkTransportPolicy`, via its member `parseResponse(_:statusCode:)`.
   ///
   /// - Returns: The `Request` object.
-  @discardableResult public func request<T: Decodable>(_ urlRequest: URLRequestConvertible, queue: DispatchQueue = .global(qos: .utility), tag: String = UUID().uuidString, overwriteExisting: Bool = true, responseHandler: @escaping (Result<T, Error>) -> Void = { _ in }) -> Request {
+  @discardableResult public func request<T: Decodable>(
+    _ endpoint: NetworkEndpoint,
+    queue: DispatchQueue = .global(qos: .utility),
+    tag: String? = nil,
+    overwriteExisting: Bool = true,
+    completion: @escaping (Result<T, Error>) -> Void = { _ in }
+  ) -> Request {
+    let tag = tag ?? generateTagFromEndpoint(endpoint)
+
     if !overwriteExisting, let existingRequest = getActiveRequest(tag: tag) { return existingRequest }
 
     removeRequestFromQueue(tag: tag)
 
-    log(.debug) { "Sending request to endpoint \"\(urlRequest)\"..." }
+    log(.debug) { "Sending request to endpoint \"\(endpoint)\"..." }
 
-    let request = AF.request(urlRequest, interceptor: policy).response(queue: queue) { [weak self] response in
-      guard let weakSelf = self else { return responseHandler(.failure(NetworkError.unknown)) }
+    let request = AF.request(endpoint, interceptor: policy).response(queue: queue) { [weak self] response in
+      guard let weakSelf = self else { return completion(.failure(NetworkError.unknown)) }
 
       let result: Result<T, Error> = weakSelf.parseResponse(response)
-      log(.debug) { "Sending request to endpoint \"\(urlRequest)\"... OK: \(result)" }
-      responseHandler(result)
+      log(.debug) { "Sending request to endpoint \"\(endpoint)\"... OK: \(result)" }
+      completion(result)
     }
 
     return addRequestToQueue(request: request, tag: tag)
   }
 
-  /// Sends an async request based on the `URLRequestConvertible` provided and parses the response
-  /// as a `Result` with a success value of a JSON decodable object.
+  /// Sends an async request based to the `NetworkEndpoint` provided and parses the response as a
+  /// `Result` with a success value of a JSON decodable object.
   ///
   /// - Parameters:
-  ///   - urlRequest: The `URLRequestConvertible`.
+  ///   - endpoint: The `NetworkEndpoint`.
   ///   - queue: The dispatch queue used for placing the request.
-  ///   - tag: Tag for identifying this request—if unspecified, a random UUID will be used.
+  ///   - tag: Custom tag for identifying this request. One will be generated automatically if
+  ///          unspecified.
   ///   - overwriteExisting: Indicates if this request should overwrite an existing request with the
   ///                        same tag. If so, the existing request will be cancelled and this new
   ///                        request will be placed. If `false` and an existing request is active, a
   ///                        new request will not be placed and the existing active request will be
   ///                        returned immediately instead.
-  ///   - responseHandler: Handler invoked when the request completes and a response is received.
-  ///                      This handler transforms the raw response into a `Result` with a JSON
-  ///                      decodable object as its success value and a `NetworkError` as its failure
-  ///                      value. More fine-grained parsing using the response status code is
-  ///                      controlled by the active `NetworkTransportPolicy`, via its member
-  ///                      `parseResponse(_:statusCode:)`.
+  ///   - completion: Handler invoked when the request completes and a response is received. This
+  ///                 handler transforms the raw response into a `Result` with a JSON decodable
+  ///                 object as its success value and a `NetworkError` as its failure value. More
+  ///                 fine-grained parsing using the response status code is controlled by the
+  ///                 active `NetworkTransportPolicy`, via its member
+  ///                 `parseResponse(_:statusCode:)`.
   ///
   /// - Returns: The `Request` object.
-  @discardableResult public func request(_ urlRequest: URLRequestConvertible, queue: DispatchQueue = .global(qos: .utility), tag: String = UUID().uuidString, overwriteExisting: Bool = true, responseHandler: @escaping (Result<Any, Error>) -> Void = { _ in }) -> Request {
+  @discardableResult public func request(
+    _ endpoint: NetworkEndpoint,
+    queue: DispatchQueue = .global(qos: .utility),
+    tag: String? = nil,
+    overwriteExisting: Bool = true,
+    completion: @escaping (Result<Any, Error>) -> Void = { _ in }
+  ) -> Request {
+    let tag = tag ?? generateTagFromEndpoint(endpoint)
+
     if !overwriteExisting, let existingRequest = getActiveRequest(tag: tag) { return existingRequest }
 
     removeRequestFromQueue(tag: tag)
 
-    log(.debug) { "Sending request to endpoint \"\(urlRequest)\"..." }
+    log(.debug) { "Sending request to endpoint \"\(endpoint)\"..." }
 
-    let request = AF.request(urlRequest, interceptor: policy).response(queue: queue) { [weak self] response in
-      guard let weakSelf = self else { return responseHandler(.failure(NetworkError.unknown)) }
+    let request = AF.request(endpoint, interceptor: policy).response(queue: queue) { [weak self] response in
+      guard let weakSelf = self else { return completion(.failure(NetworkError.unknown)) }
 
       let result: Result<Any, Error> = weakSelf.parseResponse(response)
-      log(.debug) { "Sending request to endpoint \"\(urlRequest)\"... OK: \(result)" }
-      responseHandler(result)
+      log(.debug) { "Sending request to endpoint \"\(endpoint)\"... OK: \(result)" }
+      completion(result)
     }
 
     return addRequestToQueue(request: request, tag: tag)
   }
 
-  /// Sends an async request based on the `URLRequestConvertible` provided and parses the response
-  /// as a `Result` with no success value (i.e. when the payload is discardable or when the status
-  /// code is expected to be `204`).
+  /// Sends an async request to the `NetworkEndpoint` provided and parses the response as a `Result`
+  /// with no success value (i.e. when the payload is discardable or when the status code is
+  /// expected to be `204`).
   ///
   /// - Parameters:
-  ///   - urlRequest: The `URLRequestConvertible`.
+  ///   - endpoint: The `NetworkEndpoint`.
   ///   - queue: The dispatch queue used for placing the request.
-  ///   - tag: Tag for identifying this request—if unspecified, a random UUID will be used.
+  ///   - tag: Custom tag for identifying this request. One will be generated automatically if
+  ///          unspecified.
   ///   - overwriteExisting: Indicates if this request should overwrite an existing request with the
   ///                        same tag. If so, the existing request will be cancelled and this new
   ///                        request will be placed. If `false` and an existing request is active, a
   ///                        new request will not be placed and the existing active request will be
   ///                        returned immediately instead.
-  ///   - responseHandler: Handler invoked when the request completes and a response is received.
-  ///                      This handler transforms the raw response into a `Result` with void as its
-  ///                      success value and a `NetworkError` as its failure value. More
-  ///                      fine-grained parsing using the response status code is controlled by the
-  ///                      active `NetworkTransportPolicy`, via its member
-  ///                      `parseResponse(_:statusCode:)`.
+  ///   - completion: Handler invoked when the request completes and a response is received. This
+  ///                 handler transforms the raw response into a `Result` with void as its success
+  ///                 value and a `NetworkError` as its failure value. More fine-grained parsing
+  ///                 using the response status code is controlled by the active
+  ///                 `NetworkTransportPolicy`, via its member `parseResponse(_:statusCode:)`.
   ///
   /// - Returns: The `Request` object.
-  @discardableResult public func request(_ urlRequest: URLRequestConvertible, queue: DispatchQueue = .global(qos: .utility), tag: String = UUID().uuidString, overwriteExisting: Bool = true, responseHandler: @escaping (Result<Void, Error>) -> Void = { _ in }) -> Request {
+  @discardableResult public func request(
+    _ endpoint: NetworkEndpoint,
+    queue: DispatchQueue = .global(qos: .utility),
+    tag: String? = nil,
+    overwriteExisting: Bool = true,
+    completion: @escaping (Result<Void, Error>) -> Void = { _ in }
+  ) -> Request {
+    let tag = tag ?? generateTagFromEndpoint(endpoint)
+
     if !overwriteExisting, let existingRequest = getActiveRequest(tag: tag) { return existingRequest }
 
     removeRequestFromQueue(tag: tag)
 
-    log(.debug) { "Sending request to endpoint \"\(urlRequest)\"..." }
-
-    let request = AF.request(urlRequest, interceptor: policy).response(queue: queue) { [weak self] response in
-      guard let weakSelf = self else { return responseHandler(.failure(NetworkError.unknown)) }
+    let request = AF.request(endpoint, interceptor: policy).response(queue: queue) { [weak self] response in
+      guard let weakSelf = self else { return completion(.failure(NetworkError.unknown)) }
 
       let result: Result<Void, Error> = weakSelf.parseResponse(response)
-      log(.debug) { "Sending request to endpoint \"\(urlRequest)\"... OK: \(result)" }
-      responseHandler(result)
+      log(.debug) { "Sending request to endpoint \"\(endpoint)\"... OK: \(result)" }
+      completion(result)
     }
 
     return addRequestToQueue(request: request, tag: tag)
@@ -316,5 +339,14 @@ public class NetworkTransport {
         return NetworkError.decoding(code: statusCode, cause: error)
       }
     }
+  }
+
+  /// Generates a request tag from the given `NetworkEndpoint`.
+  ///
+  /// - Parameter endpoint: The `NetworkEndpoint`.
+  ///
+  /// - Returns: The generated tag.
+  func generateTagFromEndpoint(_ endpoint: NetworkEndpoint) -> String {
+    return "[\(endpoint.method.rawValue.uppercased())]\(endpoint)"
   }
 }
