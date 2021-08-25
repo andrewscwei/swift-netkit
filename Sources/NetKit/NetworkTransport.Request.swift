@@ -44,7 +44,7 @@ extension NetworkTransport {
     let request = AF.request(
       endpoint,
       method: endpoint.method,
-      parameters: endpoint.parameters,
+      parameters: getSanitizedParameters(for: endpoint),
       encoding: getParameterEncoder(for: endpoint),
       headers: .init(endpoint.headers),
       interceptor: policy,
@@ -108,7 +108,7 @@ extension NetworkTransport {
     let request = AF.request(
       endpoint,
       method: endpoint.method,
-      parameters: endpoint.parameters,
+      parameters: getSanitizedParameters(for: endpoint),
       encoding: getParameterEncoder(for: endpoint),
       headers: .init(endpoint.headers),
       interceptor: policy,
@@ -172,7 +172,7 @@ extension NetworkTransport {
     let request = AF.request(
       endpoint,
       method: endpoint.method,
-      parameters: endpoint.parameters,
+      parameters: getSanitizedParameters(for: endpoint),
       encoding: getParameterEncoder(for: endpoint),
       headers: .init(endpoint.headers),
       interceptor: policy,
@@ -195,6 +195,16 @@ extension NetworkTransport {
       }
 
     return addRequestToQueue(request: request, tag: tag)
+  }
+
+  /// Returns the sanitized `Parameters` of a `NetworkEndpoint`.
+  ///
+  /// - Parameter endpoint: The `NetworkEntpoint`.
+  ///
+  /// - Returns: The `Parameters`.
+  private func getSanitizedParameters(for endpoint: NetworkEndpoint) -> Parameters? {
+    guard let parameters = endpoint.parameters, !parameters.isEmpty else { return nil }
+    return parameters
   }
 
   /// Returns the `ParameterEncoder` based on the endpoint request method.

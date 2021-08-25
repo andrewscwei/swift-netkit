@@ -8,7 +8,7 @@ import Foundation
 /// making network requests.
 public protocol NetworkEndpoint: URLConvertible, CustomStringConvertible {
 
-  typealias Descriptor = (method: String, path: String)
+  typealias Descriptor = (method: HTTPMethod, path: String)
 
   /// A tuple containing the request method and path of the endpoint.
   var descriptor: Descriptor { get }
@@ -33,7 +33,7 @@ extension NetworkEndpoint {
   public var description: String { "\(Self.host)\(path)" }
 
   /// The request method of this endpoint.
-  public var method: HTTPMethod { .init(rawValue: descriptor.method.uppercased()) }
+  public var method: HTTPMethod { descriptor.method }
 
   /// The path of this endpoint (excluding the host, i.e. `/users/get`).
   public var path: String { descriptor.path }
