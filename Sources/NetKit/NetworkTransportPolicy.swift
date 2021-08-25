@@ -4,7 +4,7 @@ import Alamofire
 import BaseKit
 import Foundation
 
-/// Types conforming to this protocol governs certain behaviors of a `NetworkTransport` and
+/// Types conforming to this protocol dictates certain behaviors of a `NetworkTransport` and
 /// intercepts its requests prior to placing them.
 public protocol NetworkTransportPolicy: Alamofire.RequestInterceptor {
 
@@ -16,15 +16,13 @@ public protocol NetworkTransportPolicy: Alamofire.RequestInterceptor {
   /// current request.
   func resolveHeaders(_ urlRequest: URLRequest, for session: Session, completion: @escaping (Result<[String: String], Error>) -> Void)
 
-  /// Parses the decoded data of the response with a valid status code upon a completed request and
-  /// returns a `Result`.
+  /// Validates the response.
   ///
-  /// - Parameters:
-  ///   - data: The decoded data of the response.
-  ///   - statusCode: The HTTP status code of the response.
+  /// - Parameter response: The response.
   ///
-  /// - Returns: The `Result`.
-  func parseResponse<T>(_ data: T, statusCode: Int) -> Result<T, Error>
+  /// - Returns: A `Result` indiciating whether validation was a success (with no value) or a 
+  ///            failure (with the error).
+  func validate(response: HTTPURLResponse) -> Result<Void, Error>
 }
 
 extension NetworkTransportPolicy {
@@ -72,30 +70,15 @@ extension NetworkTransportPolicy {
     }
   }
 
-  /// Parses the decoded data of the response with a valid status code upon a completed request and
-  /// returns a `Result`. If the decoded data conforms to `ErrorConvertible` and the status code is
-  /// within the range of `400` to `599`, a failure will be returned with the error.
-  ///
-  /// - Parameters:
-  ///   - data: The decoded data of the response.
-  ///   - statusCode: The HTTP status code of the response.
-  ///
-  /// - Returns: The `Result`.
-  public func parseResponse<T>(_ data: T, statusCode: Int) -> Result<T, Error> {
-    let error = try? (data as? ErrorConvertible)?.asError()
+  public func validate(response: HTTPURLResponse) -> Result<Void, Error> {
+    let statusCode = response.statusCode
 
     switch statusCode {
-    case 401: return .failure(NetworkError.unauthorized(code: statusCode, cause: error))
-    case 429: return .failure(NetworkError.tooManyRequests(code: statusCode, cause: error))
-    case 400..<499: return .failure(NetworkError.client(code: statusCode, cause: error))
-    case 500..<599: return .failure(NetworkError.server(code: statusCode, cause: error))
-    default:
-      if let error = error {
-        return .failure(NetworkError.client(code: statusCode, cause: error))
-      }
-      else {
-        return .success(data)
-      }
+    case 401: return .failure(NetworkError.unauthorized(code: statusCode))
+    case 429: return .failure(NetworkError.tooManyRequests(code: statusCode))
+    case 400..<499: return .failure(NetworkError.client(code: statusCode))
+    case 500..<599: return .failure(NetworkError.server(code: statusCode))
+    default: return .success
     }
   }
 }

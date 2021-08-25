@@ -3,12 +3,11 @@
 import Alamofire
 import BaseKit
 import Foundation
-import SwiftyJSON
 
 extension NetworkTransport {
 
-  /// Sends an async multipart request to the `NetworkEndpoint` provided and parses the response as
-  /// a `Result` with a success value of codable type `T`.
+  /// Sends an async request to the `NetworkEndpoint` provided and parses the response as a `Result`
+  /// with a success value of decodable type `T`.
   ///
   /// - Parameters:
   ///   - endpoint: The `NetworkEndpoint`.
@@ -27,7 +26,7 @@ extension NetworkTransport {
   ///                 `NetworkTransportPolicy`, via its member `parseResponse(_:statusCode:)`.
   ///
   /// - Returns: The `Request` object.
-  @discardableResult public func upload<T: Decodable>(
+  @discardableResult public func request<T: Decodable>(
     _ endpoint: NetworkEndpoint,
     queue: DispatchQueue = .global(qos: .utility),
     tag: String? = nil,
@@ -40,24 +39,18 @@ extension NetworkTransport {
 
     removeRequestFromQueue(tag: tag)
 
-    log(.debug, isEnabled: debugMode) { "Sending mutipart \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"..." }
+    log(.debug, isEnabled: debugMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"..." }
 
-    let request = AF.upload(
-      multipartFormData: { formData in
-        do {
-          try self.appendToMultipartFormData(formData, parameters: endpoint.parameters ?? [:])
-        }
-        catch {
-          return completion(.failure(NetworkError.encoding(cause: error)))
-        }
-      },
-      to: endpoint,
+    let request = AF.request(
+      endpoint,
       method: endpoint.method,
+      parameters: endpoint.parameters,
+      encoding: getParameterEncoder(for: endpoint),
       headers: .init(endpoint.headers),
-      interceptor: policy
-    ) { urlRequest in
-      urlRequest.timeoutInterval = endpoint.timeout
-    }
+      interceptor: policy,
+      requestModifier: { urlRequest in
+        urlRequest.timeoutInterval = endpoint.timeout
+      })
       .validate({ urlRequest, response, data in self.policy.validate(response: response) })
       .responseDecodable(of: T.self, queue: queue) { [weak self] response in
         guard let weakSelf = self else { return }
@@ -65,19 +58,19 @@ extension NetworkTransport {
         switch response.result {
         case .failure(let error):
           let networkError = NetworkError.from(error)
-          log(.error, isEnabled: weakSelf.debugMode) { "Sending multipart \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... ERR: \(networkError)" }
+          log(.error, isEnabled: weakSelf.debugMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... ERR: [\(response.response?.statusCode ?? -1)] \(networkError)" }
           completion(.failure(networkError))
         case .success(let data):
-          log(.debug, isEnabled: weakSelf.debugMode) { "Sending multipart \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... OK: \(data)" }
+          log(.debug, isEnabled: weakSelf.debugMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... OK: [\(response.response?.statusCode ?? -1)] \(data)" }
           completion(.success(data))
         }
-      }
+    }
 
     return addRequestToQueue(request: request, tag: tag)
   }
 
-  /// Sends an async multipart request to the `NetworkEndpoint` provided and parses the response as
-  /// a `Result` with a success value of a JSON decodable object.
+  /// Sends an async request to the `NetworkEndpoint` provided and parses the response as a `Result`
+  /// with a success value of a JSON object.
   ///
   /// - Parameters:
   ///   - endpoint: The `NetworkEndpoint`.
@@ -97,7 +90,7 @@ extension NetworkTransport {
   ///                 `parseResponse(_:statusCode:)`.
   ///
   /// - Returns: The `Request` object.
-  @discardableResult public func upload(
+  @discardableResult public func request(
     _ endpoint: NetworkEndpoint,
     queue: DispatchQueue = .global(qos: .utility),
     tag: String? = nil,
@@ -110,24 +103,18 @@ extension NetworkTransport {
 
     removeRequestFromQueue(tag: tag)
 
-    log(.debug, isEnabled: debugMode) { "Sending mutipart \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"..." }
+    log(.debug, isEnabled: debugMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"..." }
 
-    let request = AF.upload(
-      multipartFormData: { formData in
-        do {
-          try self.appendToMultipartFormData(formData, parameters: endpoint.parameters ?? [:])
-        }
-        catch {
-          return completion(.failure(NetworkError.encoding(cause: error)))
-        }
-      },
-      to: endpoint,
+    let request = AF.request(
+      endpoint,
       method: endpoint.method,
+      parameters: endpoint.parameters,
+      encoding: getParameterEncoder(for: endpoint),
       headers: .init(endpoint.headers),
-      interceptor: policy
-    ) { urlRequest in
-      urlRequest.timeoutInterval = endpoint.timeout
-    }
+      interceptor: policy,
+      requestModifier: { urlRequest in
+        urlRequest.timeoutInterval = endpoint.timeout
+      })
       .validate({ urlRequest, response, data in self.policy.validate(response: response) })
       .responseJSON(queue: queue) { [weak self] response in
         guard let weakSelf = self else { return }
@@ -135,20 +122,20 @@ extension NetworkTransport {
         switch response.result {
         case .failure(let error):
           let networkError = NetworkError.from(error)
-          log(.error, isEnabled: weakSelf.debugMode) { "Sending multipart \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... ERR: \(networkError)" }
+          log(.error, isEnabled: weakSelf.debugMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... ERR: [\(response.response?.statusCode ?? -1)] \(networkError)" }
           completion(.failure(networkError))
         case .success(let data):
-          log(.debug, isEnabled: weakSelf.debugMode) { "Sending multipart \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... OK: \(data)" }
+          log(.debug, isEnabled: weakSelf.debugMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... OK: [\(response.response?.statusCode ?? -1)] \(data)" }
           completion(.success(data))
         }
-      }
+    }
 
     return addRequestToQueue(request: request, tag: tag)
   }
 
-  /// Sends an async multipart request to the `NetworkEndpoint` provided and parses the response as
-  /// a `Result` with no success value (i.e. when the payload is discardable or when the status code
-  /// is expected to be `204`).
+  /// Sends an async request to the `NetworkEndpoint` provided and parses the response as a `Result`
+  /// with no success value (i.e. when the payload is discardable or when the status code is
+  /// expected to be `204`).
   ///
   /// - Parameters:
   ///   - endpoint: The `NetworkEndpoint`.
@@ -167,7 +154,7 @@ extension NetworkTransport {
   ///                 `NetworkTransportPolicy`, via its member `parseResponse(_:statusCode:)`.
   ///
   /// - Returns: The `Request` object.
-  @discardableResult public func upload(
+  @discardableResult public func request(
     _ endpoint: NetworkEndpoint,
     queue: DispatchQueue = .global(qos: .utility),
     tag: String? = nil,
@@ -180,24 +167,18 @@ extension NetworkTransport {
 
     removeRequestFromQueue(tag: tag)
 
-    log(.debug, isEnabled: debugMode) { "Sending mutipart \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"..." }
+    log(.debug, isEnabled: debugMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"..." }
 
-    let request = AF.upload(
-      multipartFormData: { formData in
-        do {
-          try self.appendToMultipartFormData(formData, parameters: endpoint.parameters ?? [:])
-        }
-        catch {
-          return completion(.failure(NetworkError.encoding(cause: error)))
-        }
-      },
-      to: endpoint,
+    let request = AF.request(
+      endpoint,
       method: endpoint.method,
+      parameters: endpoint.parameters,
+      encoding: getParameterEncoder(for: endpoint),
       headers: .init(endpoint.headers),
-      interceptor: policy
-    ) { urlRequest in
-      urlRequest.timeoutInterval = endpoint.timeout
-    }
+      interceptor: policy,
+      requestModifier: { urlRequest in
+        urlRequest.timeoutInterval = endpoint.timeout
+      })
       .validate({ urlRequest, response, data in self.policy.validate(response: response) })
       .response(queue: queue) { [weak self] response in
         guard let weakSelf = self else { return }
@@ -205,49 +186,26 @@ extension NetworkTransport {
         switch response.result {
         case .failure(let error):
           let networkError = NetworkError.from(error)
-          log(.error, isEnabled: weakSelf.debugMode) { "Sending multipart \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... ERR: \(networkError)" }
+          log(.error, isEnabled: weakSelf.debugMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... ERR: [\(response.response?.statusCode ?? -1)] \(networkError)" }
           completion(.failure(networkError))
         case .success:
-          log(.debug, isEnabled: weakSelf.debugMode) { "Sending multipart \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... OK" }
+          log(.debug, isEnabled: weakSelf.debugMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... OK: [\(response.response?.statusCode ?? -1)]" }
           completion(.success)
         }
-
       }
 
     return addRequestToQueue(request: request, tag: tag)
   }
 
-  /// Appends parameters to a multipart form data object. Supported parameters include raw `Data`
-  /// (treated as files to be uploaded), urls (also treated as files to be uploaded), and otherwise
-  /// JSON encodable values.
+  /// Returns the `ParameterEncoder` based on the endpoint request method.
   ///
-  /// - Parameters:
-  ///   - formData: The multipart form data object to append parameters to.
-  ///   - parameters: The parameters to append to the multipart form data.
+  /// - Parameter endpoint: The `NetworkEndpoint`.
   ///
-  /// - Throws:
-  ///   - `NetworkError.encodingParameters`: when unable to encode one or more parameters.
-  private func appendToMultipartFormData(_ formData: MultipartFormData, parameters: Parameters) throws {
-    for (key, value) in parameters {
-      if let data = value as? Data {
-        formData.append(data, withName: key, fileName: key, mimeType: data.mimeType)
-      }
-      else {
-        let json = JSON(value)
-
-        if let rawString = json.rawString(), let data = rawString.data(using: .utf8) {
-          formData.append(data, withName: key)
-        }
-        else {
-          do {
-            let data = try json.rawData()
-            formData.append(data, withName: key)
-          }
-          catch {
-            throw NetworkError.encoding(cause: error)
-          }
-        }
-      }
+  /// - Returns: The `ParameterEncoder`.
+  private func getParameterEncoder(for endpoint: NetworkEndpoint) -> ParameterEncoding {
+    switch endpoint.method {
+    case .put, .patch, .post: return JSONEncoding.default
+    default: return URLEncoding(arrayEncoding: .noBrackets, boolEncoding: .literal)
     }
   }
 }

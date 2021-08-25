@@ -4,7 +4,7 @@ import Alamofire
 import BaseKit
 import Foundation
 
-/// An object delegated to making network requests.
+/// An object delegated to making JSON network requests.
 ///
 /// When parsing a response data of type `T`, if `T` conforms to `ErrorConvertible` and an error can
 /// be constructed from the data, expect a `Result.failure` in the response handlers with an
@@ -15,10 +15,15 @@ import Foundation
 /// error message.
 public class NetworkTransport {
 
-  /// Default `NetworkTransportPolicy` to use if one is not provided.
-  public struct DefaultPolicy: NetworkTransportPolicy {
-    public init() {}
-  }
+  /// Default `NetworkTransportPolicy` to use when one is not provided.
+  class DefaultPolicy: NetworkTransportPolicy {}
+
+  /// Specifies if debug mode is on. When enabled, `NetworkTransport` will begin outputting verbose
+  /// logs.
+  public var debugMode: Bool = false
+
+  /// Dispatch queue for thread-safe read and write of mutable members.
+  let lockQueue: DispatchQueue = .init(label: "io.sybl.netkit.NetworkTransport", qos: .utility)
 
   /// The policy of this `NetworkTransport`.
   var policy: NetworkTransportPolicy
@@ -26,7 +31,16 @@ public class NetworkTransport {
   /// Map of active network requests accessible by their tags.
   var requestQueue: [String: Request] = [:]
 
-  public init(policy: NetworkTransportPolicy = DefaultPolicy()) {
+  /// Creates a new `NetworkTransport` instance using the default `NetworkTransportPolicy`.
+  public convenience init() {
+    self.init(policy: DefaultPolicy())
+  }
+
+  /// Creates a new `NetworkTransport` instance.
+  ///
+  /// - Parameters:
+  ///   - policy: The `NetworkTransportPolicy` to use.
+  public init(policy: NetworkTransportPolicy) {
     self.policy = policy
   }
 
@@ -37,8 +51,10 @@ public class NetworkTransport {
   ///
   /// - Returns: The active request if there is a match.
   public func getActiveRequest(tag: String) -> Request? {
-    guard let request = requestQueue[tag], !request.isCancelled, !request.isFinished, !request.isSuspended else { return nil }
-    return request
+    lockQueue.sync { () -> Request? in
+      guard let request = requestQueue[tag], !request.isCancelled, !request.isFinished, !request.isSuspended else { return nil }
+      return request
+    }
   }
 
   /// Adds a request to the queue.
@@ -52,9 +68,17 @@ public class NetworkTransport {
   /// - Returns: Either the request that was added, or the existing request with the specified tag
   ///            name if `overwriteExisting` is `false`.
   @discardableResult func addRequestToQueue(request: Request, tag: String, overwriteExisting: Bool = true) -> Request {
-    if !overwriteExisting, let existingRequest = getActiveRequest(tag: tag) { return existingRequest }
-    requestQueue[tag]?.cancel()
-    requestQueue[tag] = request
+    if !overwriteExisting, let existingRequest = getActiveRequest(tag: tag) {
+      log(.default, isEnabled: debugMode) { "Adding request with tag <\(tag)> to queue... SKIP: A request already exists with that tag, returning the existing request instead" }
+      return existingRequest
+    }
+
+    lockQueue.sync(flags: [.barrier]) {
+      requestQueue[tag]?.cancel()
+      requestQueue[tag] = request
+      log(.default, isEnabled: debugMode) { "Adding request with tag <\(tag)> to queue... OK: Queue = \(requestQueue.keys)" }
+    }
+
     return request
   }
 
@@ -64,9 +88,14 @@ public class NetworkTransport {
   ///
   /// - Returns: The removed request.
   @discardableResult func removeRequestFromQueue(tag: String) -> Request? {
-    let request = getActiveRequest(tag: tag)
-    request?.cancel()
-    requestQueue.removeValue(forKey: tag)
+    guard let request = getActiveRequest(tag: tag) else { return nil }
+    request.cancel()
+
+    lockQueue.sync(flags: [.barrier]) {
+      requestQueue.removeValue(forKey: tag)
+      log(.default, isEnabled: debugMode) { "Removing request with tag <\(tag)>... OK: Queue = \(requestQueue.keys)" }
+    }
+
     return request
   }
 
@@ -77,268 +106,8 @@ public class NetworkTransport {
     }
 
     requestQueue = [:]
-  }
 
-  /// Sends an async request based to the `NetworkEndpoint` provided and parses the response as a
-  /// `Result` with a success value of codable type `T`.
-  ///
-  /// - Parameters:
-  ///   - endpoint: The `NetworkEndpoint`.
-  ///   - queue: The dispatch queue used for placing the request.
-  ///   - tag: Custom tag for identifying this request. One will be generated automatically if
-  ///          unspecified.
-  ///   - overwriteExisting: Indicates if this request should overwrite an existing request with the
-  ///                        same tag. If so, the existing request will be cancelled and this new
-  ///                        request will be placed. If `false` and an existing request is active, a
-  ///                        new request will not be placed and the existing active request will be
-  ///                        returned immediately instead.
-  ///   - completion: Handler invoked when the request completes and a response is received. This
-  ///                 handler transforms the raw response into a `Result` with codable type `T` as
-  ///                 its success value and a `NetworkError` as its failure value. More fine-grained
-  ///                 parsing using the response status code is controlled by the active
-  ///                 `NetworkTransportPolicy`, via its member `parseResponse(_:statusCode:)`.
-  ///
-  /// - Returns: The `Request` object.
-  @discardableResult public func request<T: Decodable>(
-    _ endpoint: NetworkEndpoint,
-    queue: DispatchQueue = .global(qos: .utility),
-    tag: String? = nil,
-    overwriteExisting: Bool = true,
-    completion: @escaping (Result<T, Error>) -> Void = { _ in }
-  ) -> Request {
-    let tag = tag ?? generateTagFromEndpoint(endpoint)
-
-    if !overwriteExisting, let existingRequest = getActiveRequest(tag: tag) { return existingRequest }
-
-    removeRequestFromQueue(tag: tag)
-
-    log(.debug) { "Sending request to endpoint \"\(endpoint)\"..." }
-
-    let request = AF.request(endpoint, interceptor: policy).response(queue: queue) { [weak self] response in
-      guard let weakSelf = self else { return completion(.failure(NetworkError.unknown)) }
-
-      let result: Result<T, Error> = weakSelf.parseResponse(response)
-      log(.debug) { "Sending request to endpoint \"\(endpoint)\"... OK: \(result)" }
-      completion(result)
-    }
-
-    return addRequestToQueue(request: request, tag: tag)
-  }
-
-  /// Sends an async request based to the `NetworkEndpoint` provided and parses the response as a
-  /// `Result` with a success value of a JSON decodable object.
-  ///
-  /// - Parameters:
-  ///   - endpoint: The `NetworkEndpoint`.
-  ///   - queue: The dispatch queue used for placing the request.
-  ///   - tag: Custom tag for identifying this request. One will be generated automatically if
-  ///          unspecified.
-  ///   - overwriteExisting: Indicates if this request should overwrite an existing request with the
-  ///                        same tag. If so, the existing request will be cancelled and this new
-  ///                        request will be placed. If `false` and an existing request is active, a
-  ///                        new request will not be placed and the existing active request will be
-  ///                        returned immediately instead.
-  ///   - completion: Handler invoked when the request completes and a response is received. This
-  ///                 handler transforms the raw response into a `Result` with a JSON decodable
-  ///                 object as its success value and a `NetworkError` as its failure value. More
-  ///                 fine-grained parsing using the response status code is controlled by the
-  ///                 active `NetworkTransportPolicy`, via its member
-  ///                 `parseResponse(_:statusCode:)`.
-  ///
-  /// - Returns: The `Request` object.
-  @discardableResult public func request(
-    _ endpoint: NetworkEndpoint,
-    queue: DispatchQueue = .global(qos: .utility),
-    tag: String? = nil,
-    overwriteExisting: Bool = true,
-    completion: @escaping (Result<Any, Error>) -> Void = { _ in }
-  ) -> Request {
-    let tag = tag ?? generateTagFromEndpoint(endpoint)
-
-    if !overwriteExisting, let existingRequest = getActiveRequest(tag: tag) { return existingRequest }
-
-    removeRequestFromQueue(tag: tag)
-
-    log(.debug) { "Sending request to endpoint \"\(endpoint)\"..." }
-
-    let request = AF.request(endpoint, interceptor: policy).response(queue: queue) { [weak self] response in
-      guard let weakSelf = self else { return completion(.failure(NetworkError.unknown)) }
-
-      let result: Result<Any, Error> = weakSelf.parseResponse(response)
-      log(.debug) { "Sending request to endpoint \"\(endpoint)\"... OK: \(result)" }
-      completion(result)
-    }
-
-    return addRequestToQueue(request: request, tag: tag)
-  }
-
-  /// Sends an async request to the `NetworkEndpoint` provided and parses the response as a `Result`
-  /// with no success value (i.e. when the payload is discardable or when the status code is
-  /// expected to be `204`).
-  ///
-  /// - Parameters:
-  ///   - endpoint: The `NetworkEndpoint`.
-  ///   - queue: The dispatch queue used for placing the request.
-  ///   - tag: Custom tag for identifying this request. One will be generated automatically if
-  ///          unspecified.
-  ///   - overwriteExisting: Indicates if this request should overwrite an existing request with the
-  ///                        same tag. If so, the existing request will be cancelled and this new
-  ///                        request will be placed. If `false` and an existing request is active, a
-  ///                        new request will not be placed and the existing active request will be
-  ///                        returned immediately instead.
-  ///   - completion: Handler invoked when the request completes and a response is received. This
-  ///                 handler transforms the raw response into a `Result` with void as its success
-  ///                 value and a `NetworkError` as its failure value. More fine-grained parsing
-  ///                 using the response status code is controlled by the active
-  ///                 `NetworkTransportPolicy`, via its member `parseResponse(_:statusCode:)`.
-  ///
-  /// - Returns: The `Request` object.
-  @discardableResult public func request(
-    _ endpoint: NetworkEndpoint,
-    queue: DispatchQueue = .global(qos: .utility),
-    tag: String? = nil,
-    overwriteExisting: Bool = true,
-    completion: @escaping (Result<Void, Error>) -> Void = { _ in }
-  ) -> Request {
-    let tag = tag ?? generateTagFromEndpoint(endpoint)
-
-    if !overwriteExisting, let existingRequest = getActiveRequest(tag: tag) { return existingRequest }
-
-    removeRequestFromQueue(tag: tag)
-
-    let request = AF.request(endpoint, interceptor: policy).response(queue: queue) { [weak self] response in
-      guard let weakSelf = self else { return completion(.failure(NetworkError.unknown)) }
-
-      let result: Result<Void, Error> = weakSelf.parseResponse(response)
-      log(.debug) { "Sending request to endpoint \"\(endpoint)\"... OK: \(result)" }
-      completion(result)
-    }
-
-    return addRequestToQueue(request: request, tag: tag)
-  }
-
-  /// Parses the request response into a `Result` when the response data type is `Any`, where an
-  /// attempt to serialize it into a JSON object will occur.
-  ///
-  /// - Parameter response: The request response.
-  ///
-  /// - Returns: The `Result`.
-  func parseResponse(_ response: AFDataResponse<Data?>) -> Result<Any, Error> {
-    if let error = parseResponseError(response) {
-      return .failure(error)
-    }
-    else if let statusCode = response.response?.statusCode {
-      do {
-        let decodedData: Any = try parseResponseData(response)
-        return policy.parseResponse(decodedData, statusCode: statusCode)
-      }
-      catch {
-        if let error = error as? NetworkError {
-          return .failure(error)
-        }
-        else {
-          return .failure(NetworkError.decoding(code: statusCode, cause: error))
-        }
-      }
-    }
-    else {
-      return .failure(NetworkError.unknown)
-    }
-  }
-
-  /// Parses the request response into a `Result` when the response data type is `Void`, as in there
-  /// is no response data (i.e. a `204` status).
-  ///
-  /// - Parameter response: The request response.
-  ///
-  /// - Returns: The `Result`.
-  func parseResponse(_ response: AFDataResponse<Data?>) -> Result<Void, Error> {
-    if let error = parseResponseError(response) {
-      return .failure(error)
-    }
-    else if let statusCode = response.response?.statusCode {
-      return policy.parseResponse((), statusCode: statusCode)
-    }
-    else {
-      return .failure(NetworkError.unknown)
-    }
-  }
-
-  /// Parses the request repsonse into a `Result` when the response data type is `Decodable`.
-  ///
-  /// - Parameter response: The request response.
-  ///
-  /// - Returns: The `Result`.
-  func parseResponse<T: Decodable>(_ response: AFDataResponse<Data?>) -> Result<T, Error> {
-    if let error = parseResponseError(response) {
-      return .failure(error)
-    }
-    else if let statusCode = response.response?.statusCode {
-      do {
-        let decodedData: T = try parseResponseData(response)
-        return policy.parseResponse(decodedData, statusCode: statusCode)
-      }
-      catch {
-        if let error = error as? NetworkError {
-          return .failure(error)
-        }
-        else {
-          return .failure(NetworkError.decoding(code: statusCode, cause: error))
-        }
-      }
-    }
-    else {
-      return .failure(NetworkError.unknown)
-    }
-  }
-
-  /// Decodes the data inside a request response to a JSON object of type `Any`.
-  ///
-  /// - Parameter response: The request response.
-  ///
-  /// - Throws: When there is an error decoding the data.
-  ///
-  /// - Returns: The decoded JSON object.
-  func parseResponseData(_ response: AFDataResponse<Data?>) throws -> Any {
-    guard let data = response.data else { throw NetworkError.decoding(code: response.response?.statusCode) }
-    return try JSONSerialization.jsonObject(with: data, options: [])
-  }
-
-  /// Decodes the data inside a request response into a codable type `T`.
-  ///
-  /// - Parameter response: The request response.
-  ///
-  /// - Throws: When there is an error decoding the data.
-  ///
-  /// - Returns: The decoded object of type `T`.
-  func parseResponseData<T: Decodable>(_ response: AFDataResponse<Data?>) throws -> T {
-    guard let data = response.data else { throw NetworkError.decoding(code: response.response?.statusCode) }
-    return try JSONDecoder().decode(T.self, from: data)
-  }
-
-  /// Transforms the error inside a request response to a `NetworkError`. If there is no error in
-  /// the response, `nil` is returned.
-  ///
-  /// - Parameter response: The request response.
-  ///
-  /// - Returns: The `NetworkError`, if any.
-  func parseResponseError(_ response: AFDataResponse<Data?>) -> Error? {
-    guard let error = response.error else { return nil }
-
-    let statusCode = response.response?.statusCode
-
-    switch (error as NSError).code {
-    case URLError.Code.cancelled.rawValue: return NetworkError.cancelled(code: statusCode, cause: error)
-    case URLError.Code.notConnectedToInternet.rawValue: return NetworkError.noNetwork(code: statusCode, cause: error)
-    case URLError.Code.timedOut.rawValue: return NetworkError.timeout(code: statusCode, cause: error)
-    default:
-      if case .explicitlyCancelled = error {
-        return NetworkError.cancelled(code: statusCode, cause: error)
-      }
-      else {
-        return NetworkError.decoding(code: statusCode, cause: error)
-      }
-    }
+    log(.debug, isEnabled: debugMode) { "Removing all requests from queue... OK: Queue = \(requestQueue.keys)" }
   }
 
   /// Generates a request tag from the given `NetworkEndpoint`.
@@ -347,6 +116,6 @@ public class NetworkTransport {
   ///
   /// - Returns: The generated tag.
   func generateTagFromEndpoint(_ endpoint: NetworkEndpoint) -> String {
-    return "[\(endpoint.method.rawValue.uppercased())]\(endpoint)"
+    return "[\(endpoint.method.rawValue.uppercased())] \(endpoint)"
   }
 }

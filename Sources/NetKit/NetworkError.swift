@@ -1,5 +1,6 @@
 // © Sybl
 
+import Alamofire
 import Foundation
 
 /// An `Error` conforming enum consiting of errors thrown by `NetworkTransport` operations. By
@@ -7,7 +8,7 @@ import Foundation
 /// this error to conform to `LocalizedError` and provide its own localized descriptions.
 public enum NetworkError: Error {
 
-  /// A type of network error whose nature is unknown.
+  /// A type of network error whose nature is unknown or is unhandled by `NetworkTransport`.
   case unknown(code: Int? = nil, cause: Error? = nil)
 
   /// A type of network error thrown when there is an authorization failure of some sort, i.e. 401
@@ -46,11 +47,11 @@ public enum NetworkError: Error {
   /// Generic server-side network error, i.e. 5XX status codes.
   case server(code: Int? = nil, cause: Error? = nil)
 
-  /// A type of network error whose nature is unknown.
+  /// A type of network error whose nature is unknown or is unhandled by `NetworkTransport`.
   public static let unknown: NetworkError = .unknown()
 
-/// A type of network error thrown when there is an authorization failure of some sort, i.e. 401
-/// status code.
+  /// A type of network error thrown when there is an authorization failure of some sort, i.e. 401
+  /// status code.
   public static let unauthorized: NetworkError = .unauthorized()
 
   /// A type of network error thrown when there are too many consecutive same requests within a
@@ -110,6 +111,72 @@ extension NetworkError: CustomNSError {
   public var errorUserInfo: [String: Any] {
     switch self {
     default: return [:]
+    }
+  }
+}
+
+extension NetworkError {
+
+  /// Creates a `NetworkError` from a `URLError`.
+  ///
+  /// - Parameter error: The `URLError`.
+  ///
+  /// - Returns: The `NetworkError`.
+  public static func from(_ error: URLError) -> NetworkError {
+    switch error.code {
+    case .cancelled:
+      return .cancelled(code: error.errorCode, cause: error)
+    case .notConnectedToInternet:
+      return .noNetwork(code: error.errorCode, cause: error)
+    case .timedOut:
+      return .timeout(code: error.errorCode, cause: error)
+    default:
+      return .unknown(code: error.errorCode, cause: error)
+    }
+  }
+
+  /// Creates a `NetworkError` from an `AFError`.
+  ///
+  /// - Parameter error: The `AFError`.
+  ///
+  /// - Returns: The `NetworkError`.
+  public static func from(_ error: AFError) -> NetworkError {
+    switch error {
+    case .responseValidationFailed(let reason):
+      switch reason {
+      case .customValidationFailed(let cause):
+        return from(cause)
+      default:
+        return .client(code: error.responseCode, cause: error)
+      }
+    case .explicitlyCancelled:
+      return .cancelled(cause: error)
+    case .sessionTaskFailed(let error):
+      return from(error)
+    case .responseSerializationFailed:
+      return .decoding(code: error.responseCode, cause: error)
+    default:
+      return .unknown(code: error.responseCode, cause: error)
+    }
+  }
+
+  /// Creates a `NetworkError` from any `Error`.
+  ///
+  /// - Parameter error: The `Error`.
+  ///
+  /// - Returns: The `NetworkError`.
+  public static func from(_ error: Error) -> NetworkError {
+    if let error = error as? NetworkError {
+      return error
+    }
+    else if let error = error as? AFError {
+      return from(error)
+    }
+    else if let error = error as? URLError {
+      return from(error)
+    }
+    else {
+      return .unknown(cause: error)
     }
   }
 }

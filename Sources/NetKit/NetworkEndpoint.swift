@@ -1,27 +1,28 @@
 // © Sybl
 
 import Alamofire
+import BaseKit
 import Foundation
 
-public protocol NetworkEndpoint: URLRequestConvertible, CustomStringConvertible {
+/// A type describing the API endpoint of which a `NetworkTransport` will be communicating with when
+/// making network requests.
+public protocol NetworkEndpoint: URLConvertible, CustomStringConvertible {
 
-  /// The path of this endpoint (excluding the host, i.e. `/users/get`).
-  var path: String { get }
+  typealias Descriptor = (method: String, path: String)
 
-  /// The request method of this endpoint.
-  var method: HTTPMethod { get }
+  /// A tuple containing the request method and path of the endpoint.
+  var descriptor: Descriptor { get }
 
   /// The timeout interval in seconds.
   var timeout: TimeInterval { get }
 
-  /// The query parameters of this endpoint. These parameters will be encoded into the request URL
-  /// as the `URLRequest` is constructed.
-  var queryParameters: Parameters { get }
+  /// Headers to set for each request.
+  var headers: [String: String] { get }
 
-  /// The body parameters of this endpoint. These parameters will eventually be applied to the
-  /// `httpBody` property of the constructed `URLRequest` by the `NetworkTransport`, overwriting the
-  /// preexisting `httpBody` value. These parameters are also used during multipart requests.
-  var bodyParameters: Parameters { get }
+  /// The parameters of this endpoint. Depending on the request method, these parameters will either
+  /// be encoded into the URL as query strings or the request body as JSON/multipart form
+  /// parameters.
+  var parameters: [String: Any]? { get }
 
   /// The host URL of the endpoint, (i.e. `https://www.example.com`).
   static var host: String { get }
@@ -29,9 +30,26 @@ public protocol NetworkEndpoint: URLRequestConvertible, CustomStringConvertible 
 
 extension NetworkEndpoint {
 
-  public var description: String { "[\(method.rawValue.uppercased())]\(Self.host)\(path)" }
+  public var description: String { "\(Self.host)\(path)" }
 
-  public func asURLRequest() throws -> URLRequest {
+  /// The request method of this endpoint.
+  public var method: HTTPMethod { .init(rawValue: descriptor.method.uppercased()) }
+
+  /// The path of this endpoint (excluding the host, i.e. `/users/get`).
+  public var path: String { descriptor.path }
+
+  public var timeout: TimeInterval { 60 }
+
+  public var headers: [String: String] {
+    [
+      "Accept": "application/json",
+      "Content-Type": "application/json",
+    ]
+  }
+
+  public var parameters: [String: Any]? { nil }
+
+  public func asURL() throws -> URL {
     guard
       let hostComponents = URLComponents(string: Self.host),
       var urlComponents = URLComponents(string: path)
@@ -43,14 +61,6 @@ extension NetworkEndpoint {
 
     guard let url = urlComponents.url else { throw NetworkError.encoding }
 
-    var urlRequest = URLRequest(url: url)
-    urlRequest.httpMethod = method.rawValue
-    urlRequest.setValue("application/json", forHTTPHeaderField: "Accept")
-    urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-    urlRequest.timeoutInterval = timeout
-    urlRequest = try URLEncoding.default.encode(urlRequest, with: queryParameters)
-    urlRequest = try JSONEncoding.default.encode(urlRequest, with: bodyParameters)
-
-    return urlRequest
+    return url
   }
 }
