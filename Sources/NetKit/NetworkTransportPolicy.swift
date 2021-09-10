@@ -8,13 +8,12 @@ import Foundation
 /// intercepts its requests prior to placing them.
 public protocol NetworkTransportPolicy: Alamofire.RequestInterceptor {
 
-  /// Replaces the host for the specified `URLRequest` and `Session`. Provide a successful `Result`
-  /// of `nil` to leave the original host untouched.
-  func resolveHost(_ urlRequest: URLRequest, for session: Session, completion: @escaping (Result<String?, Error>) -> Void)
+  /// Replaces the host for the specified `URLRequest`. Provide a successful `Result` of `nil` to
+  /// leave the original host untouched.
+  func resolveHost(for urlRequest: URLRequest, completion: @escaping (Result<String?, Error>) -> Void)
 
-  /// Modifies the headers for the specified `URLRequest` and `Session`. Headers are added to the
-  /// current request.
-  func resolveHeaders(_ urlRequest: URLRequest, for session: Session, completion: @escaping (Result<[String: String], Error>) -> Void)
+  /// Modifies the headers for the specified `URLRequest`. Headers are added to the current request.
+  func resolveHeaders(for urlRequest: URLRequest, completion: @escaping (Result<[String: String], Error>) -> Void)
 
   /// Validates the response.
   ///
@@ -23,22 +22,29 @@ public protocol NetworkTransportPolicy: Alamofire.RequestInterceptor {
   /// - Returns: A `Result` indiciating whether validation was a success (with no value) or a 
   ///            failure (with the error).
   func validate(response: HTTPURLResponse) -> Result<Void, Error>
+
+  /// Intercepts and parses the response result, then returns the parsed result to the client.
+  ///
+  /// - Parameters:
+  ///   - result: The `Result` from the network request initiated by the `NetworkTransport`.
+  ///   - statusCode: The status code associated with the `Result`.
+  func parseResult<T>(result: Result<T, Error>, statusCode: Int) -> Result<T, Error>
 }
 
 extension NetworkTransportPolicy {
 
-  public func resolveHost(_ urlRequest: URLRequest, for session: Session, completion: @escaping (Result<String?, Error>) -> Void) {
+  public func resolveHost(for urlRequest: URLRequest, completion: @escaping (Result<String?, Error>) -> Void) {
     completion(.success(nil))
   }
 
-  public func resolveHeaders(_ urlRequest: URLRequest, for session: Session, completion: @escaping (Result<[String: String], Error>) -> Void) {
+  public func resolveHeaders(for urlRequest: URLRequest, completion: @escaping (Result<[String: String], Error>) -> Void) {
     completion(.success([:]))
   }
 
   public func adapt(_ urlRequest: URLRequest, for session: Session, completion: @escaping (Result<URLRequest, Error>) -> Void) {
     var urlRequest = urlRequest
 
-    resolveHost(urlRequest, for: session) { hostResult in
+    resolveHost(for: urlRequest) { hostResult in
       switch hostResult {
       case .failure(let error): return completion(.failure(error))
       case .success(let host):
@@ -55,7 +61,7 @@ extension NetworkTransportPolicy {
           urlRequest.url = components.url
         }
 
-        resolveHeaders(urlRequest, for: session) { headersResult in
+        resolveHeaders(for: urlRequest) { headersResult in
           switch headersResult {
           case .failure(let error): return completion(.failure(error))
           case .success(let headers):
@@ -76,9 +82,19 @@ extension NetworkTransportPolicy {
     switch statusCode {
     case 401: return .failure(NetworkError.unauthorized(code: statusCode))
     case 429: return .failure(NetworkError.tooManyRequests(code: statusCode))
-    case 400..<499: return .failure(NetworkError.client(code: statusCode))
-    case 500..<599: return .failure(NetworkError.server(code: statusCode))
     default: return .success
+    }
+  }
+
+  public func parseResult<T>(result: Result<T, Error>, statusCode: Int) -> Result<T, Error> {
+    switch result {
+    case .failure(let error): return .failure(error)
+    case .success(let data):
+      switch statusCode {
+      case 400..<499: return .failure(NetworkError.client(code: statusCode))
+      case 500..<599: return .failure(NetworkError.server(code: statusCode))
+      default: return .success(data)
+      }
     }
   }
 }

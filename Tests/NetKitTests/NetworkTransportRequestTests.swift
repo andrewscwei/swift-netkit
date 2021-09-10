@@ -1,29 +1,28 @@
 import XCTest
-import Alamofire
 @testable import NetKit
 
 class NetworkTransportRequestTests: XCTestCase {
 
   enum MockEndpoint: NetworkEndpoint {
-    case get(Parameters)
-    case delete(Parameters)
-    case post(Parameters)
-    case put(Parameters)
-    case patch(Parameters)
+    case get([String: Any])
+    case delete([String: Any])
+    case post([String: Any])
+    case put([String: Any])
+    case patch([String: Any])
     case statusCode(code: Int)
 
     var descriptor: Descriptor {
       switch self {
-      case .get: return ("GET", "/get")
-      case .delete: return ("DELETE", "/delete")
-      case .post: return ("POST", "/post")
-      case .put: return ("PUT", "/put")
-      case .patch: return ("PATCH", "/patch")
-      case .statusCode(let code): return ("GET", "/status/\(code)")
+      case .get: return (.get, "/get")
+      case .delete: return (.delete, "/delete")
+      case .post: return (.post, "/post")
+      case .put: return (.put, "/put")
+      case .patch: return (.patch, "/patch")
+      case .statusCode(let code): return (.get, "/status/\(code)")
       }
     }
 
-    var parameters: Parameters? {
+    var parameters: [String: Any]? {
       switch self {
       case let .get(params): return params
       case let .delete(params): return params
@@ -110,41 +109,41 @@ class NetworkTransportRequestTests: XCTestCase {
 
     let networkTransport = NetworkTransport()
 
-    let params: Parameters = [
+    let params: [String: Any] = [
       "foo": "foo",
       "bar": "bar",
     ]
 
     networkTransport.request(MockEndpoint.get(params)) { (result: Result<Any, Error>) in
-      guard let data = try? result.get() as? Parameters, let args = data["args"] as? Parameters else { return XCTFail() }
+      guard let data = try? result.get() as? [String: Any], let args = data["args"] as? [String: Any] else { return XCTFail() }
       XCTAssertTrue(args["foo"] as? String == params["foo"] as? String)
       XCTAssertTrue(args["bar"] as? String == params["bar"] as? String)
       expectationGet.fulfill()
     }
 
     networkTransport.request(MockEndpoint.delete(params)) { (result: Result<Any, Error>) in
-      guard let data = try? result.get() as? Parameters, let args = data["args"] as? Parameters else { return XCTFail() }
+      guard let data = try? result.get() as? [String: Any], let args = data["args"] as? [String: Any] else { return XCTFail() }
       XCTAssertTrue(args["foo"] as? String == params["foo"] as? String)
       XCTAssertTrue(args["bar"] as? String == params["bar"] as? String)
       expectationDelete.fulfill()
     }
 
     networkTransport.request(MockEndpoint.post(params)) { (result: Result<Any, Error>) in
-      guard let data = try? result.get() as? Parameters, let args = data["json"] as? Parameters else { return XCTFail() }
+      guard let data = try? result.get() as? [String: Any], let args = data["json"] as? [String: Any] else { return XCTFail() }
       XCTAssertTrue(args["foo"] as? String == params["foo"] as? String)
       XCTAssertTrue(args["bar"] as? String == params["bar"] as? String)
       expectationPost.fulfill()
     }
 
     networkTransport.request(MockEndpoint.put(params)) { (result: Result<Any, Error>) in
-      guard let data = try? result.get() as? Parameters, let args = data["json"] as? Parameters else { return XCTFail() }
+      guard let data = try? result.get() as? [String: Any], let args = data["json"] as? [String: Any] else { return XCTFail() }
       XCTAssertTrue(args["foo"] as? String == params["foo"] as? String)
       XCTAssertTrue(args["bar"] as? String == params["bar"] as? String)
       expectationPut.fulfill()
     }
 
     networkTransport.request(MockEndpoint.patch(params)) { (result: Result<Any, Error>) in
-      guard let data = try? result.get() as? Parameters, let args = data["json"] as? Parameters else { return XCTFail() }
+      guard let data = try? result.get() as? [String: Any], let args = data["json"] as? [String: Any] else { return XCTFail() }
       XCTAssertTrue(args["foo"] as? String == params["foo"] as? String)
       XCTAssertTrue(args["bar"] as? String == params["bar"] as? String)
       expectationPatch.fulfill()

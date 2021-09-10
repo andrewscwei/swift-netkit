@@ -1,21 +1,20 @@
 import XCTest
-import Alamofire
 @testable import NetKit
 
 class NetworkTransportUploadTests: XCTestCase {
 
   enum MockEndpoint: NetworkEndpoint {
-    case post(Parameters)
+    case post([String: Any])
     case statusCode(code: Int)
 
     var descriptor: Descriptor {
       switch self {
-      case .post: return ("POST", "/post")
-      case .statusCode(let code): return ("POST", "/status/\(code)")
+      case .post: return (.post, "/post")
+      case .statusCode(let code): return (.post, "/status/\(code)")
       }
     }
 
-    var parameters: Parameters? {
+    var parameters: [String: Any]? {
       switch self {
       case let .post(params): return params
       default: return nil
@@ -59,14 +58,14 @@ class NetworkTransportUploadTests: XCTestCase {
 
     let networkTransport = NetworkTransport()
 
-    let params: Parameters = [
+    let params: [String: Any] = [
       "foo": "foo",
       "bar": "bar",
       "file": Data("Hello, World!".utf8),
     ]
 
     networkTransport.upload(MockEndpoint.post(params)) { (result: Result<Any, Error>) in
-      guard let data = try? result.get() as? Parameters, let form = data["form"] as? Parameters, let files = data["files"] as? Parameters else { return XCTFail() }
+      guard let data = try? result.get() as? [String: Any], let form = data["form"] as? [String: Any], let files = data["files"] as? [String: Any] else { return XCTFail() }
 
       XCTAssertTrue(form["foo"] as? String == params["foo"] as? String)
       XCTAssertTrue(form["bar"] as? String == params["bar"] as? String)

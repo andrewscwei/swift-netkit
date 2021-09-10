@@ -55,14 +55,20 @@ extension NetworkTransport {
       .responseDecodable(of: T.self, queue: queue) { [weak self] response in
         guard let weakSelf = self else { return }
 
+        guard let statusCode = response.response?.statusCode else {
+          let networkError: NetworkError = .noResponse
+          log(.error, isEnabled: weakSelf.debugMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... ERR: [\(response.response?.statusCode ?? -1)] \(networkError)" }
+          return completion(.failure(networkError))
+        }
+
         switch response.result {
         case .failure(let error):
           let networkError = NetworkError.from(error)
           log(.error, isEnabled: weakSelf.debugMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... ERR: [\(response.response?.statusCode ?? -1)] \(networkError)" }
-          completion(.failure(networkError))
+          completion(weakSelf.policy.parseResult(result: .failure(networkError), statusCode: statusCode))
         case .success(let data):
           log(.debug, isEnabled: weakSelf.debugMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... OK: [\(response.response?.statusCode ?? -1)] \(data)" }
-          completion(.success(data))
+          completion(weakSelf.policy.parseResult(result: .success(data), statusCode: statusCode))
         }
     }
 
@@ -119,16 +125,22 @@ extension NetworkTransport {
       .responseJSON(queue: queue) { [weak self] response in
         guard let weakSelf = self else { return }
 
+        guard let statusCode = response.response?.statusCode else {
+          let networkError: NetworkError = .noResponse
+          log(.error, isEnabled: weakSelf.debugMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... ERR: [\(response.response?.statusCode ?? -1)] \(networkError)" }
+          return completion(.failure(networkError))
+        }
+
         switch response.result {
         case .failure(let error):
           let networkError = NetworkError.from(error)
           log(.error, isEnabled: weakSelf.debugMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... ERR: [\(response.response?.statusCode ?? -1)] \(networkError)" }
-          completion(.failure(networkError))
+          completion(weakSelf.policy.parseResult(result: .failure(networkError), statusCode: statusCode))
         case .success(let data):
           log(.debug, isEnabled: weakSelf.debugMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... OK: [\(response.response?.statusCode ?? -1)] \(data)" }
-          completion(.success(data))
+          completion(weakSelf.policy.parseResult(result: .success(data), statusCode: statusCode))
         }
-    }
+      }
 
     return addRequestToQueue(request: request, tag: tag)
   }
@@ -183,14 +195,20 @@ extension NetworkTransport {
       .response(queue: queue) { [weak self] response in
         guard let weakSelf = self else { return }
 
+        guard let statusCode = response.response?.statusCode else {
+          let networkError: NetworkError = .noResponse
+          log(.error, isEnabled: weakSelf.debugMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... ERR: [\(response.response?.statusCode ?? -1)] \(networkError)" }
+          return completion(.failure(networkError))
+        }
+
         switch response.result {
         case .failure(let error):
           let networkError = NetworkError.from(error)
           log(.error, isEnabled: weakSelf.debugMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... ERR: [\(response.response?.statusCode ?? -1)] \(networkError)" }
-          completion(.failure(networkError))
+          completion(weakSelf.policy.parseResult(result: .failure(networkError), statusCode: statusCode))
         case .success:
           log(.debug, isEnabled: weakSelf.debugMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... OK: [\(response.response?.statusCode ?? -1)]" }
-          completion(.success)
+          completion(weakSelf.policy.parseResult(result: .success, statusCode: statusCode))
         }
       }
 

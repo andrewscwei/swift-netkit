@@ -1,5 +1,4 @@
 import XCTest
-import Alamofire
 @testable import NetKit
 
 class NetworkTransportDownloadTests: XCTestCase {
@@ -9,7 +8,7 @@ class NetworkTransportDownloadTests: XCTestCase {
 
     var descriptor: Descriptor {
       switch self {
-      case .image: return ("GET", "/image")
+      case .image: return (.get, "/image")
       }
     }
 

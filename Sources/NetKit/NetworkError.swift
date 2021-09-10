@@ -11,6 +11,9 @@ public enum NetworkError: Error {
   /// A type of network error whose nature is unknown or is unhandled by `NetworkTransport`.
   case unknown(code: Int? = nil, cause: Error? = nil)
 
+  /// A type of network error thrown when there is no response.
+  case noResponse(code: Int? = nil, cause: Error? = nil)
+
   /// A type of network error thrown when there is an authorization failure of some sort, i.e. 401
   /// status code.
   case unauthorized(code: Int? = nil, cause: Error? = nil)
@@ -49,6 +52,9 @@ public enum NetworkError: Error {
 
   /// A type of network error whose nature is unknown or is unhandled by `NetworkTransport`.
   public static let unknown: NetworkError = .unknown()
+
+  /// A type of network error thrown when there is no response.
+  public static let noResponse: NetworkError = .noResponse()
 
   /// A type of network error thrown when there is an authorization failure of some sort, i.e. 401
   /// status code.
@@ -94,6 +100,7 @@ extension NetworkError: CustomNSError {
   public var errorCode: Int {
     switch self {
     case .unknown(let code, _): return code ?? -1
+    case .noResponse(let code, _): return code ?? -1
     case .unauthorized(let code, _): return code ?? -1
     case .tooManyRequests(let code, _): return code ?? -1
     case .noNetwork(let code, _): return code ?? -1
