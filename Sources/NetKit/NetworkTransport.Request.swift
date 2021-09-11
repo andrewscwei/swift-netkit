@@ -54,22 +54,7 @@ extension NetworkTransport {
       .validate({ urlRequest, response, data in self.policy.validate(response: response) })
       .responseDecodable(of: T.self, queue: queue) { [weak self] response in
         guard let weakSelf = self else { return }
-
-        guard let statusCode = response.response?.statusCode else {
-          let networkError: NetworkError = .noResponse
-          log(.error, isEnabled: weakSelf.debugMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... ERR: [\(response.response?.statusCode ?? -1)] \(networkError)" }
-          return completion(.failure(networkError))
-        }
-
-        switch response.result {
-        case .failure(let error):
-          let networkError = NetworkError.from(error)
-          log(.error, isEnabled: weakSelf.debugMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... ERR: [\(response.response?.statusCode ?? -1)] \(networkError)" }
-          completion(weakSelf.policy.parseResult(result: .failure(networkError), statusCode: statusCode))
-        case .success(let data):
-          log(.debug, isEnabled: weakSelf.debugMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... OK: [\(response.response?.statusCode ?? -1)] \(data)" }
-          completion(weakSelf.policy.parseResult(result: .success(data), statusCode: statusCode))
-        }
+        completion(weakSelf.parseResponse(response, for: endpoint, tag: tag))
     }
 
     return addRequestToQueue(request: request, tag: tag)
@@ -124,22 +109,7 @@ extension NetworkTransport {
       .validate({ urlRequest, response, data in self.policy.validate(response: response) })
       .responseJSON(queue: queue) { [weak self] response in
         guard let weakSelf = self else { return }
-
-        guard let statusCode = response.response?.statusCode else {
-          let networkError: NetworkError = .noResponse
-          log(.error, isEnabled: weakSelf.debugMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... ERR: [\(response.response?.statusCode ?? -1)] \(networkError)" }
-          return completion(.failure(networkError))
-        }
-
-        switch response.result {
-        case .failure(let error):
-          let networkError = NetworkError.from(error)
-          log(.error, isEnabled: weakSelf.debugMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... ERR: [\(response.response?.statusCode ?? -1)] \(networkError)" }
-          completion(weakSelf.policy.parseResult(result: .failure(networkError), statusCode: statusCode))
-        case .success(let data):
-          log(.debug, isEnabled: weakSelf.debugMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... OK: [\(response.response?.statusCode ?? -1)] \(data)" }
-          completion(weakSelf.policy.parseResult(result: .success(data), statusCode: statusCode))
-        }
+        completion(weakSelf.parseResponse(response, for: endpoint, tag: tag))
       }
 
     return addRequestToQueue(request: request, tag: tag)
@@ -194,25 +164,45 @@ extension NetworkTransport {
       .validate({ urlRequest, response, data in self.policy.validate(response: response) })
       .response(queue: queue) { [weak self] response in
         guard let weakSelf = self else { return }
-
-        guard let statusCode = response.response?.statusCode else {
-          let networkError: NetworkError = .noResponse
-          log(.error, isEnabled: weakSelf.debugMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... ERR: [\(response.response?.statusCode ?? -1)] \(networkError)" }
-          return completion(.failure(networkError))
-        }
-
-        switch response.result {
-        case .failure(let error):
-          let networkError = NetworkError.from(error)
-          log(.error, isEnabled: weakSelf.debugMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... ERR: [\(response.response?.statusCode ?? -1)] \(networkError)" }
-          completion(weakSelf.policy.parseResult(result: .failure(networkError), statusCode: statusCode))
-        case .success:
-          log(.debug, isEnabled: weakSelf.debugMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... OK: [\(response.response?.statusCode ?? -1)]" }
-          completion(weakSelf.policy.parseResult(result: .success, statusCode: statusCode))
-        }
+        completion(weakSelf.parseResponse(response, for: endpoint, tag: tag).map { _ in })
       }
 
     return addRequestToQueue(request: request, tag: tag)
+  }
+
+  /// Parses the response returned by an endpoint request into a `Result`.
+  ///
+  /// - Parameters:
+  ///   - response: The response.
+  ///   - endpoint: The endpoint.
+  ///   - tag: The tag associated with the request.
+  ///
+  /// - Returns: The parsed result.
+  private func parseResponse<T>(_ response: DataResponse<T, AFError>, for endpoint: NetworkEndpoint, tag: String) -> Result<T, Error> {
+    switch response.result {
+    case .failure(let error):
+      let statusCode = response.response?.statusCode
+      let networkError = NetworkError.from(error)
+
+      if let statusCode = statusCode {
+        log(.error, isEnabled: debugMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... ERR: [\(statusCode)] \(networkError)" }
+        return policy.parseResult(result: .failure(networkError), statusCode: statusCode)
+      }
+      else {
+        log(.error, isEnabled: debugMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... ERR: \(networkError)" }
+        return .failure(networkError)
+      }
+
+    case .success(let data):
+      guard let statusCode = response.response?.statusCode else {
+        let networkError: NetworkError = .noResponse
+        log(.error, isEnabled: debugMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... ERR: \(networkError)" }
+        return .failure(networkError)
+      }
+
+      log(.debug, isEnabled: debugMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... OK: [\(statusCode)] \(data)" }
+      return policy.parseResult(result: .success(data), statusCode: statusCode)
+    }
   }
 
   /// Returns the sanitized `Parameters` of a `NetworkEndpoint`.

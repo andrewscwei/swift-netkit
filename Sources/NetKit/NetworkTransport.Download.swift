@@ -32,7 +32,7 @@ extension NetworkTransport {
     extension ext: String? = nil,
     tag: String? = nil,
     overwriteExisting: Bool = true,
-    completion: @escaping (Result<URL, NetworkError>) -> Void = { _ in }
+    completion: @escaping (Result<URL, Error>) -> Void = { _ in }
   ) -> Request {
     let tag = tag ?? "[DOWNLOAD]\(url)"
 
@@ -40,7 +40,7 @@ extension NetworkTransport {
 
     removeRequestFromQueue(tag: tag)
 
-    log(.debug, isEnabled: debugMode) { "Downloading from endpoint \"\(url)\" with tag <\(tag)> to location \(directory)..." }
+    log(.debug, isEnabled: debugMode) { "Downloading from URL \"\(url)\" with tag <\(tag)>..." }
 
     let destination: DownloadRequest.Destination = { (_, _) in
       var fileURL = directory.appendingPathComponent(fileName)
@@ -53,26 +53,37 @@ extension NetworkTransport {
     }
 
     let request = AF.download(url, interceptor: policy, to: destination).response { [weak self] response in
-      guard let weakSelf = self else { return completion(.failure(.unknown)) }
-
-      switch response.result {
-      case .failure(let error):
-        let networkError = NetworkError.from(error)
-        log(.error, isEnabled: weakSelf.debugMode) { "Downloading from endpoint \"\(url)\" with tag <\(tag)> to location \(directory)... ERR: \(networkError)" }
-        completion(.failure(networkError))
-      case .success(let fileURL):
-        if let fileURL = fileURL {
-          log(.debug, isEnabled: weakSelf.debugMode) { "Downloading from endpoint \"\(url)\" with tag <\(tag)> to location \(directory)... OK: \(fileURL)" }
-          completion(.success(fileURL))
-        }
-        else {
-          let networkError: NetworkError = .download
-          log(.error, isEnabled: weakSelf.debugMode) { "Downloading from endpoint \"\(url)\" with tag <\(tag)> to location \(directory)... ERR: \(networkError)" }
-          completion(.failure(networkError))
-        }
-      }
+      guard let weakSelf = self else { return completion(.failure(NetworkError.unknown)) }
+      completion(weakSelf.parseResponse(response, for: url, tag: tag))
     }
 
     return addRequestToQueue(request: request, tag: tag)
+  }
+
+  /// Parses the response returned by a download request into a `Result`.
+  ///
+  /// - Parameters:
+  ///   - response: The response.
+  ///   - url: The `URLConvertible`.
+  ///   - tag: The tag associated with the request.
+  ///
+  /// - Returns: The parsed result.
+  private func parseResponse(_ response: DownloadResponse<URL?, AFError>, for url: URLConvertible, tag: String) -> Result<URL, Error> {
+    switch response.result {
+    case .failure(let error):
+      let networkError = NetworkError.from(error)
+      log(.error, isEnabled: debugMode) { "Downloading from URL \"\(url)\" with tag <\(tag)>... ERR: \(networkError)" }
+      return .failure(networkError)
+    case .success(let fileURL):
+      if let fileURL = fileURL {
+        log(.debug, isEnabled: debugMode) { "Downloading from URL \"\(url)\" with tag <\(tag)>... OK: \(fileURL)" }
+        return .success(fileURL)
+      }
+      else {
+        let networkError: NetworkError = .download
+        log(.error, isEnabled: debugMode) { "Downloading from URL \"\(url)\" with tag <\(tag)>... ERR: \(networkError)" }
+        return .failure(networkError)
+      }
+    }
   }
 }

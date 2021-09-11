@@ -88,12 +88,23 @@ extension NetworkTransportPolicy {
 
   public func parseResult<T>(result: Result<T, Error>, statusCode: Int) -> Result<T, Error> {
     switch result {
-    case .failure(let error): return .failure(error)
+    case .failure(let error):
+      return .failure(error)
     case .success(let data):
+      let error = try? (data as? ErrorConvertible)?.asError()
+
       switch statusCode {
-      case 400..<499: return .failure(NetworkError.client(code: statusCode))
-      case 500..<599: return .failure(NetworkError.server(code: statusCode))
-      default: return .success(data)
+      case 400..<499:
+        return .failure(NetworkError.client(code: statusCode, cause: error))
+      case 500..<599:
+        return .failure(NetworkError.server(code: statusCode, cause: error))
+      default:
+        if let error = error {
+          return .failure(NetworkError.client(code: statusCode, cause: error))
+        }
+        else {
+          return .success(data)
+        }
       }
     }
   }
