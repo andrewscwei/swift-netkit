@@ -35,9 +35,9 @@ switch Environment.get() {
 case .local:
   dependencies.append(.package(path: "../BaseKit"))
 case .development:
-  dependencies.append(.package(name: "BaseKit", url: "git@github.com:sybl/swift-basekit", .branch("main")))
+  dependencies.append(.package(name: "BaseKit", url: "https://github.com/sybl/swift-basekit", .branch("main")))
 case .production:
-  dependencies.append(.package(name: "BaseKit", url: "git@github.com:sybl/swift-basekit", from: "0.16.0"))
+  dependencies.append(.package(name: "BaseKit", url: "https://github.com/sybl/swift-basekit", from: "0.16.0"))
 }
 
 let package = Package(
