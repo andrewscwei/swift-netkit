@@ -65,7 +65,7 @@ logs
 .credentials
 .credentials.*
 .keystore
-gc_keys.json
+service-account.json
 secrets.json
 
 # Databases
