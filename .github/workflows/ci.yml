@@ -1,7 +1,8 @@
 name: CI
 on:
   push:
-    branches: ['**']
+    branches: ["**"]
+    tags-ignore: ["v*"]
 jobs:
   build:
     name: Build/Test
@@ -9,6 +10,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          submodules: recursive
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
       - name: Authenticate private GitHub repos
         run: git config --global url."https://oauth2:${{ secrets.GH_ACCESS_TOKEN }}@github.com".insteadOf https://github.com
       - name: Configure Ruby dependencies cache
@@ -24,3 +28,13 @@ jobs:
           bundle install
       - name: Test
         run: bundle exec fastlane test
+  notify:
+    name: Notify
+    needs: [build]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: andrewscwei/slack-action@v1.0.0
+        with:
+          success: ${{ needs.build.result == 'success' }}
+          webhook-url: ${{ secrets.SLACK_DEVOPS_WEBHOOK_URL }}

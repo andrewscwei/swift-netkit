@@ -1,4 +1,4 @@
-// © Sybl
+// © GHOZT
 
 import Alamofire
 import BaseKit
@@ -19,7 +19,7 @@ public protocol NetworkTransportPolicy: Alamofire.RequestInterceptor {
   ///
   /// - Parameter response: The response.
   ///
-  /// - Returns: A `Result` indiciating whether validation was a success (with no value) or a 
+  /// - Returns: A `Result` indiciating whether validation was a success (with no value) or a
   ///            failure (with the error).
   func validate(response: HTTPURLResponse) -> Result<Void, Error>
 

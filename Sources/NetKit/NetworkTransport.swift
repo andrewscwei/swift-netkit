@@ -1,4 +1,4 @@
-// © Sybl
+// © GHOZT
 
 import Alamofire
 import BaseKit
@@ -23,7 +23,7 @@ public class NetworkTransport {
   public var debugMode: Bool = false
 
   /// Dispatch queue for thread-safe read and write of mutable members.
-  let lockQueue: DispatchQueue = .init(label: "io.sybl.netkit.NetworkTransport", qos: .utility)
+  let lockQueue: DispatchQueue = .init(label: "io.ghozt.netkit.NetworkTransport", qos: .utility)
 
   /// The policy of this `NetworkTransport`.
   var policy: NetworkTransportPolicy
