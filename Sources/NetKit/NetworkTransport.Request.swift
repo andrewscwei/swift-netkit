@@ -1,7 +1,6 @@
 // © GHOZT
 
 import Alamofire
-import BaseKit
 import Foundation
 
 extension NetworkTransport {
@@ -39,7 +38,7 @@ extension NetworkTransport {
 
     removeRequestFromQueue(tag: tag)
 
-    log(.debug, isEnabled: debugMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"..." }
+    log(.debug, mode: logMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"..." }
 
     let request = AF.request(
       endpoint,
@@ -94,7 +93,7 @@ extension NetworkTransport {
 
     removeRequestFromQueue(tag: tag)
 
-    log(.debug, isEnabled: debugMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"..." }
+    log(.debug, mode: logMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"..." }
 
     let request = AF.request(
       endpoint,
@@ -149,7 +148,7 @@ extension NetworkTransport {
 
     removeRequestFromQueue(tag: tag)
 
-    log(.debug, isEnabled: debugMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"..." }
+    log(.debug, mode: logMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"..." }
 
     let request = AF.request(
       endpoint,
@@ -185,22 +184,22 @@ extension NetworkTransport {
       let networkError = NetworkError.from(error)
 
       if let statusCode = statusCode {
-        log(.error, isEnabled: debugMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... ERR: [\(statusCode)] \(networkError)" }
+        log(.error, mode: logMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... ERR: [\(statusCode)] \(networkError)" }
         return policy.parseResult(result: .failure(networkError), statusCode: statusCode)
       }
       else {
-        log(.error, isEnabled: debugMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... ERR: \(networkError)" }
+        log(.error, mode: logMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... ERR: \(networkError)" }
         return .failure(networkError)
       }
 
     case .success(let data):
       guard let statusCode = response.response?.statusCode else {
         let networkError: NetworkError = .noResponse
-        log(.error, isEnabled: debugMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... ERR: \(networkError)" }
+        log(.error, mode: logMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... ERR: \(networkError)" }
         return .failure(networkError)
       }
 
-      log(.debug, isEnabled: debugMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... OK: [\(statusCode)] \(data)" }
+      log(.debug, mode: logMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... OK: [\(statusCode)] \(data)" }
       return policy.parseResult(result: .success(data), statusCode: statusCode)
     }
   }

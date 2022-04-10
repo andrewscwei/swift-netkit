@@ -11,15 +11,6 @@
         }
       },
       {
-        "package": "BaseKit",
-        "repositoryURL": "https://github.com/0xGHOZT/swift-basekit",
-        "state": {
-          "branch": null,
-          "revision": "fa39e4b75bbb17f02c009edd738ef5a01ec5a8eb",
-          "version": "0.17.0"
-        }
-      },
-      {
         "package": "SwiftyJSON",
         "repositoryURL": "https://github.com/SwiftyJSON/SwiftyJSON.git",
         "state": {

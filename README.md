@@ -1,4 +1,4 @@
-# NetKit [![CI](https://github.com/0xGHOZT/swift-netkit/workflows/CI/badge.svg?branch=main)](https://github.com/0xGHOZT/swift-netkit/actions/workflows/ci.yml?query=branch%3Amain)
+# NetKit [![CI](https://github.com/0xGHOZT/swift-netkit/workflows/CI/badge.svg?branch=master)](https://github.com/0xGHOZT/swift-netkit/actions/workflows/ci.yml?query=branch%3Amain)
 
 ## Setup
 

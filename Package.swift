@@ -33,11 +33,11 @@ var dependencies: [Package.Dependency] = [
 
 switch Environment.get() {
 case .local:
-  dependencies.append(.package(path: "../BaseKit"))
+  break
 case .development:
-  dependencies.append(.package(name: "BaseKit", url: "https://github.com/0xGHOZT/swift-basekit", .branch("main")))
+  break
 case .production:
-  dependencies.append(.package(name: "BaseKit", url: "https://github.com/0xGHOZT/swift-basekit", from: "0.17.0"))
+  break
 }
 
 let package = Package(
@@ -52,7 +52,7 @@ let package = Package(
   targets: [
     .target(
       name: "NetKit",
-      dependencies: ["BaseKit", "Alamofire", "SwiftyJSON"]),
+      dependencies: ["Alamofire", "SwiftyJSON"]),
     .testTarget(
       name: "NetKitTests",
       dependencies: ["NetKit"]),

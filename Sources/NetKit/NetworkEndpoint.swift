@@ -1,7 +1,6 @@
 // © GHOZT
 
 import Alamofire
-import BaseKit
 import Foundation
 
 /// A type describing the API endpoint of which a `NetworkTransport` will be communicating with when

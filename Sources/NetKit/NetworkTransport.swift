@@ -1,7 +1,6 @@
 // © GHOZT
 
 import Alamofire
-import BaseKit
 import Foundation
 
 /// An object delegated to making JSON network requests.
@@ -18,9 +17,8 @@ public class NetworkTransport {
   /// Default `NetworkTransportPolicy` to use when one is not provided.
   class DefaultPolicy: NetworkTransportPolicy {}
 
-  /// Specifies if debug mode is on. When enabled, `NetworkTransport` will begin outputting verbose
-  /// logs.
-  public var debugMode: Bool = false
+  /// Specifies the log mode that governs how `NetworkTransport` outputs logs (if any).
+  public var logMode: LogMode = .none
 
   /// Dispatch queue for thread-safe read and write of mutable members.
   let lockQueue: DispatchQueue = .init(label: "io.ghozt.netkit.NetworkTransport", qos: .utility)
@@ -69,14 +67,14 @@ public class NetworkTransport {
   ///            name if `overwriteExisting` is `false`.
   @discardableResult func addRequestToQueue(request: Request, tag: String, overwriteExisting: Bool = true) -> Request {
     if !overwriteExisting, let existingRequest = getActiveRequest(tag: tag) {
-      log(.default, isEnabled: debugMode) { "Adding request with tag <\(tag)> to queue... SKIP: A request already exists with that tag, returning the existing request instead" }
+      log(.default, mode: logMode) { "Adding request with tag <\(tag)> to queue... SKIP: A request already exists with that tag, returning the existing request instead" }
       return existingRequest
     }
 
     lockQueue.sync(flags: [.barrier]) {
       requestQueue[tag]?.cancel()
       requestQueue[tag] = request
-      log(.default, isEnabled: debugMode) { "Adding request with tag <\(tag)> to queue... OK: Queue = \(requestQueue.keys)" }
+      log(.default, mode: logMode) { "Adding request with tag <\(tag)> to queue... OK: Queue = \(requestQueue.keys)" }
     }
 
     return request
@@ -93,7 +91,7 @@ public class NetworkTransport {
 
     lockQueue.sync(flags: [.barrier]) {
       requestQueue.removeValue(forKey: tag)
-      log(.default, isEnabled: debugMode) { "Removing request with tag <\(tag)>... OK: Queue = \(requestQueue.keys)" }
+      log(.default, mode: logMode) { "Removing request with tag <\(tag)>... OK: Queue = \(requestQueue.keys)" }
     }
 
     return request
@@ -107,7 +105,7 @@ public class NetworkTransport {
 
     requestQueue = [:]
 
-    log(.debug, isEnabled: debugMode) { "Removing all requests from queue... OK: Queue = \(requestQueue.keys)" }
+    log(.debug, mode: logMode) { "Removing all requests from queue... OK: Queue = \(requestQueue.keys)" }
   }
 
   /// Generates a request tag from the given `NetworkEndpoint`.

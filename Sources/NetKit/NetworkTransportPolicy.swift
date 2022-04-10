@@ -1,7 +1,6 @@
 // © GHOZT
 
 import Alamofire
-import BaseKit
 import Foundation
 
 /// Types conforming to this protocol dictates certain behaviors of a `NetworkTransport` and
@@ -82,7 +81,7 @@ extension NetworkTransportPolicy {
     switch statusCode {
     case 401: return .failure(NetworkError.unauthorized(code: statusCode))
     case 429: return .failure(NetworkError.tooManyRequests(code: statusCode))
-    default: return .success
+    default: return .success(())
     }
   }
 
@@ -91,20 +90,17 @@ extension NetworkTransportPolicy {
     case .failure(let error):
       return .failure(error)
     case .success(let data):
-      let error = try? (data as? ErrorConvertible)?.asError()
+      if let error = try? (data as? NetworkErrorConvertible)?.asNetworkError(statusCode: statusCode) {
+        return .failure(error)
+      }
 
       switch statusCode {
       case 400..<499:
-        return .failure(NetworkError.client(code: statusCode, cause: error))
+        return .failure(NetworkError.client(code: statusCode))
       case 500..<599:
-        return .failure(NetworkError.server(code: statusCode, cause: error))
+        return .failure(NetworkError.server(code: statusCode))
       default:
-        if let error = error {
-          return .failure(NetworkError.client(code: statusCode, cause: error))
-        }
-        else {
-          return .success(data)
-        }
+        return .success(data)
       }
     }
   }

@@ -1,7 +1,6 @@
 // © GHOZT
 
 import Alamofire
-import BaseKit
 import Foundation
 
 extension NetworkTransport {
@@ -40,7 +39,7 @@ extension NetworkTransport {
 
     removeRequestFromQueue(tag: tag)
 
-    log(.debug, isEnabled: debugMode) { "Downloading from URL \"\(url)\" with tag <\(tag)>..." }
+    log(.debug, mode: logMode) { "Downloading from URL \"\(url)\" with tag <\(tag)>..." }
 
     let destination: DownloadRequest.Destination = { (_, _) in
       var fileURL = directory.appendingPathComponent(fileName)
@@ -72,16 +71,16 @@ extension NetworkTransport {
     switch response.result {
     case .failure(let error):
       let networkError = NetworkError.from(error)
-      log(.error, isEnabled: debugMode) { "Downloading from URL \"\(url)\" with tag <\(tag)>... ERR: \(networkError)" }
+      log(.error, mode: logMode) { "Downloading from URL \"\(url)\" with tag <\(tag)>... ERR: \(networkError)" }
       return .failure(networkError)
     case .success(let fileURL):
       if let fileURL = fileURL {
-        log(.debug, isEnabled: debugMode) { "Downloading from URL \"\(url)\" with tag <\(tag)>... OK: \(fileURL)" }
+        log(.debug, mode: logMode) { "Downloading from URL \"\(url)\" with tag <\(tag)>... OK: \(fileURL)" }
         return .success(fileURL)
       }
       else {
         let networkError: NetworkError = .download
-        log(.error, isEnabled: debugMode) { "Downloading from URL \"\(url)\" with tag <\(tag)>... ERR: \(networkError)" }
+        log(.error, mode: logMode) { "Downloading from URL \"\(url)\" with tag <\(tag)>... ERR: \(networkError)" }
         return .failure(networkError)
       }
     }
