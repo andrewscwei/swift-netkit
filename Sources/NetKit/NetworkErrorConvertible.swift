@@ -13,5 +13,5 @@ public protocol NetworkErrorConvertible {
   /// - Throws: When there is an error (ironically) constructing the error.
   ///
   /// - Returns: The `NetworkError`.
-  func asNetworkError(statusCode: Int) throws -> NetworkError
+  func asNetworkError(statusCode: Int?) throws -> NetworkError
 }
