@@ -89,12 +89,12 @@ class NetworkTransportUploadTests: XCTestCase {
     let networkTransport = NetworkTransport()
 
     networkTransport.upload(MockEndpoint.statusCode(code: 200)) { (result: Result<Void, Error>) in
-      XCTAssertTrue(result.isSuccess)
+      XCTAssertNoThrow(result.get)
       expectation200.fulfill()
     }
 
     networkTransport.upload(MockEndpoint.statusCode(code: 204)) { (result: Result<Void, Error>) in
-      XCTAssertTrue(result.isSuccess)
+      XCTAssertNoThrow(result.get)
       expectation204.fulfill()
     }
 

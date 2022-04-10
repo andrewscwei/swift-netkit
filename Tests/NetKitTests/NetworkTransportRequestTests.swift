@@ -169,12 +169,12 @@ class NetworkTransportRequestTests: XCTestCase {
     let networkTransport = NetworkTransport()
 
     networkTransport.request(MockEndpoint.statusCode(code: 200)) { (result: Result<Void, Error>) in
-      XCTAssertTrue(result.isSuccess)
+      XCTAssertNoThrow(result.get)
       expectation200.fulfill()
     }
 
     networkTransport.request(MockEndpoint.statusCode(code: 204)) { (result: Result<Void, Error>) in
-      XCTAssertTrue(result.isSuccess)
+      XCTAssertNoThrow(result.get)
       expectation204.fulfill()
     }
 

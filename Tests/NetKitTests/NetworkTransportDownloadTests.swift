@@ -21,7 +21,7 @@ class NetworkTransportDownloadTests: XCTestCase {
     let networkTransport = NetworkTransport()
 
     networkTransport.download(from: MockEndpoint.image, to: FileManager.default.temporaryDirectory) { result in
-      XCTAssertTrue(result.isSuccess)
+      XCTAssertNoThrow(result.get)
       expectation.fulfill()
     }
 
