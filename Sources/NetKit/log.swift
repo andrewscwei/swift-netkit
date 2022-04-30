@@ -9,7 +9,6 @@ public enum LogMode {
   case verbose
 }
 
-
 /// Logs a message to the unified logging system.
 ///
 /// - Parameters:
@@ -23,8 +22,7 @@ public enum LogMode {
 func log(_ level: OSLogType = .info, isPublic: Bool = true, mode: LogMode = .none, fileName: String = #file, functionName: String = #function, lineNumber: Int = #line, message: () -> String) {
   guard mode != .none else { return }
 
-  #if DEBUG
-
+#if DEBUG
   let fileName = fileName.components(separatedBy: "/").last?.components(separatedBy: ".").first
   let subsystem = Bundle.main.bundleIdentifier ?? "app"
   let category = "\(fileName ?? "???"):\(lineNumber)"
@@ -43,8 +41,7 @@ func log(_ level: OSLogType = .info, isPublic: Bool = true, mode: LogMode = .non
   default:
     break
   }
-
-  #endif
+#endif
 }
 
 /// Returns the logging symbol (in compact mode) of the specified log level.

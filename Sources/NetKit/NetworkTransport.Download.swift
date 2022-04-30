@@ -21,6 +21,9 @@ extension NetworkTransport {
   ///                        request will be placed. If `false` and an existing request is active, a
   ///                        new request will not be placed and the existing active request will be
   ///                        returned immediately instead.
+  ///   - cancelQuietly: Indicates if this request should cancel quietly without returning an error.
+  ///                    If `false`, cancellations will be treated as an error
+  ///                    (`NetworkError.cancelled`).
   ///   - completion: Handler invoked when the request completes and a response is received. This
   ///                 handler transforms the raw response into a `Result` with the saved file URL as
   ///                 its success value and a `NetworkError` as its failure value.
@@ -31,6 +34,7 @@ extension NetworkTransport {
     extension ext: String? = nil,
     tag: String? = nil,
     overwriteExisting: Bool = true,
+    cancelQuietly: Bool = true,
     completion: @escaping (Result<URL, Error>) -> Void = { _ in }
   ) -> Request {
     let tag = tag ?? "[DOWNLOAD]\(url)"
@@ -51,9 +55,21 @@ extension NetworkTransport {
       return (fileURL, [.removePreviousFile, .createIntermediateDirectories])
     }
 
-    let request = AF.download(url, interceptor: policy, to: destination).response { [weak self] response in
+    let request = AF.download(url, interceptor: policy, to: destination).response { [weak self] in
       guard let weakSelf = self else { return completion(.failure(NetworkError.unknown)) }
-      completion(weakSelf.parseResponse(response, for: url, tag: tag))
+
+      let response = weakSelf.parseResponse($0, for: url, tag: tag)
+
+      if
+        cancelQuietly,
+        case .failure(let error) = response,
+        let error = error as? NetworkError,
+        case .cancelled = error
+      {
+        return
+      }
+
+      completion(response)
     }
 
     return addRequestToQueue(request: request, tag: tag)

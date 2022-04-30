@@ -18,6 +18,9 @@ extension NetworkTransport {
   ///                        request will be placed. If `false` and an existing request is active, a
   ///                        new request will not be placed and the existing active request will be
   ///                        returned immediately instead.
+  ///   - cancelQuietly: Indicates if this request should cancel quietly without returning an error.
+  ///                    If `false`, cancellations will be treated as an error
+  ///                    (`NetworkError.cancelled`).
   ///   - completion: Handler invoked when the request completes and a response is received. This
   ///                 handler transforms the raw response into a `Result` with codable type `T` as
   ///                 its success value and a `NetworkError` as its failure value. More fine-grained
@@ -30,6 +33,7 @@ extension NetworkTransport {
     queue: DispatchQueue = .global(qos: .utility),
     tag: String? = nil,
     overwriteExisting: Bool = true,
+    cancelQuietly: Bool = true,
     completion: @escaping (Result<T, Error>) -> Void = { _ in }
   ) -> Request {
     let tag = tag ?? generateTagFromEndpoint(endpoint)
@@ -51,9 +55,21 @@ extension NetworkTransport {
         urlRequest.timeoutInterval = endpoint.timeout
       })
       .validate({ urlRequest, response, data in self.policy.validate(response: response) })
-      .responseDecodable(of: T.self, queue: queue) { [weak self] response in
+      .responseDecodable(of: T.self, queue: queue) { [weak self] in
         guard let weakSelf = self else { return }
-        completion(weakSelf.parseResponse(response, for: endpoint, tag: tag))
+
+        let response = weakSelf.parseResponse($0, for: endpoint, tag: tag)
+
+        if
+          cancelQuietly,
+          case .failure(let error) = response,
+          let error = error as? NetworkError,
+          case .cancelled = error
+        {
+          return
+        }
+
+        completion(response)
     }
 
     return addRequestToQueue(request: request, tag: tag)
@@ -72,6 +88,9 @@ extension NetworkTransport {
   ///                        request will be placed. If `false` and an existing request is active, a
   ///                        new request will not be placed and the existing active request will be
   ///                        returned immediately instead.
+  ///   - cancelQuietly: Indicates if this request should cancel quietly without returning an error.
+  ///                    If `false`, cancellations will be treated as an error
+  ///                    (`NetworkError.cancelled`).
   ///   - completion: Handler invoked when the request completes and a response is received. This
   ///                 handler transforms the raw response into a `Result` with a JSON decodable
   ///                 object as its success value and a `NetworkError` as its failure value. More
@@ -85,6 +104,7 @@ extension NetworkTransport {
     queue: DispatchQueue = .global(qos: .utility),
     tag: String? = nil,
     overwriteExisting: Bool = true,
+    cancelQuietly: Bool = true,
     completion: @escaping (Result<Any, Error>) -> Void = { _ in }
   ) -> Request {
     let tag = tag ?? generateTagFromEndpoint(endpoint)
@@ -106,9 +126,21 @@ extension NetworkTransport {
         urlRequest.timeoutInterval = endpoint.timeout
       })
       .validate({ urlRequest, response, data in self.policy.validate(response: response) })
-      .responseJSON(queue: queue) { [weak self] response in
+      .responseJSON(queue: queue) { [weak self] in
         guard let weakSelf = self else { return }
-        completion(weakSelf.parseResponse(response, for: endpoint, tag: tag))
+
+        let response = weakSelf.parseResponse($0, for: endpoint, tag: tag)
+
+        if
+          cancelQuietly,
+          case .failure(let error) = response,
+          let error = error as? NetworkError,
+          case .cancelled = error
+        {
+          return
+        }
+
+        completion(response)
       }
 
     return addRequestToQueue(request: request, tag: tag)
@@ -128,6 +160,9 @@ extension NetworkTransport {
   ///                        request will be placed. If `false` and an existing request is active, a
   ///                        new request will not be placed and the existing active request will be
   ///                        returned immediately instead.
+  ///   - cancelQuietly: Indicates if this request should cancel quietly without returning an error.
+  ///                    If `false`, cancellations will be treated as an error
+  ///                    (`NetworkError.cancelled`).
   ///   - completion: Handler invoked when the request completes and a response is received. This
   ///                 handler transforms the raw response into a `Result` with void as its success
   ///                 value and a `NetworkError` as its failure value. More fine-grained parsing
@@ -140,6 +175,7 @@ extension NetworkTransport {
     queue: DispatchQueue = .global(qos: .utility),
     tag: String? = nil,
     overwriteExisting: Bool = true,
+    cancelQuietly: Bool = true,
     completion: @escaping (Result<Void, Error>) -> Void = { _ in }
   ) -> Request {
     let tag = tag ?? generateTagFromEndpoint(endpoint)
@@ -161,9 +197,21 @@ extension NetworkTransport {
         urlRequest.timeoutInterval = endpoint.timeout
       })
       .validate({ urlRequest, response, data in self.policy.validate(response: response) })
-      .response(queue: queue) { [weak self] response in
+      .response(queue: queue) { [weak self] in
         guard let weakSelf = self else { return }
-        completion(weakSelf.parseResponse(response, for: endpoint, tag: tag).map { _ in })
+
+        let response = weakSelf.parseResponse($0, for: endpoint, tag: tag).map { _ in }
+
+        if
+          cancelQuietly,
+          case .failure(let error) = response,
+          let error = error as? NetworkError,
+          case .cancelled = error
+        {
+          return
+        }
+
+        completion(response)
       }
 
     return addRequestToQueue(request: request, tag: tag)
