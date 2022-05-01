@@ -25,13 +25,14 @@ func log(_ level: OSLogType = .info, isPublic: Bool = true, mode: LogMode = .non
 #if DEBUG
   let fileName = fileName.components(separatedBy: "/").last?.components(separatedBy: ".").first
   let subsystem = Bundle.main.bundleIdentifier ?? "app"
-  let category = "\(fileName ?? "???"):\(lineNumber)"
 
   switch mode {
   case .compact:
     guard level != .default else { return }
-    print(getCompactSymbol(for: level), "[\(category)]", message())
+    print(getCompactSymbol(for: level), "[\(fileName ?? "???")]", message())
   case .verbose:
+    let category = "\(fileName ?? "???"):\(lineNumber)"
+    
     if isPublic {
       os_log("%{public}@", log: OSLog(subsystem: subsystem, category: category), type: level, message())
     }

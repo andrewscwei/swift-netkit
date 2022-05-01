@@ -66,6 +66,7 @@ extension NetworkTransport {
           let error = error as? NetworkError,
           case .cancelled = error
         {
+          log(.debug, mode: weakSelf.logMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... SKIP: Cancelled quietly" }
           return
         }
 
@@ -137,6 +138,7 @@ extension NetworkTransport {
           let error = error as? NetworkError,
           case .cancelled = error
         {
+          log(.debug, mode: weakSelf.logMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... SKIP: Cancelled quietly" }
           return
         }
 
@@ -208,8 +210,10 @@ extension NetworkTransport {
           let error = error as? NetworkError,
           case .cancelled = error
         {
+          log(.debug, mode: weakSelf.logMode) { "Sending \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... SKIP: Cancelled quietly" }
           return
         }
+
 
         completion(response)
       }
