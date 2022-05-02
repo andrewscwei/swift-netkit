@@ -29,7 +29,7 @@ func log(_ level: OSLogType = .info, isPublic: Bool = true, mode: LogMode = .non
   switch mode {
   case .compact:
     guard level != .default else { return }
-    print(getCompactSymbol(for: level), "[\(fileName ?? "???")]", message())
+    print(getCompactSymbol(for: level), message())
   case .verbose:
     let category = "\(fileName ?? "???"):\(lineNumber)"
     
