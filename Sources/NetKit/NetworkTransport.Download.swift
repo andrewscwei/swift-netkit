@@ -5,28 +5,32 @@ import Foundation
 
 extension NetworkTransport {
 
-  /// Downloads a file from the specified `URLConvertible` to the specified directory, file name
-  /// and extension. If a file already exists at the target path, it is simply replaced with the
-  /// downloaded file.
+  /// Downloads a file from the specified `URLConvertible` to the specified
+  /// directory, file name and extension. If a file already exists at the target
+  /// path, it is simply replaced with the downloaded file.
   ///
   /// - Parameters:
   ///   - url: The `URLConvertible`.
   ///   - directory: The URL of the local directory to download the file to.
-  ///   - fileName: The name of the file to save to (defaults to a random UUID string).
+  ///   - fileName: The name of the file to save to (defaults to a random UUID
+  ///               string).
   ///   - ext: Optional extension of the file to save to.
-  ///   - tag: Custom tag for identifying this request. One will be generated automatically if
-  ///          unspecified.
-  ///   - overwriteExisting: Indicates if this request should overwrite an existing request with the
-  ///                        same tag. If so, the existing request will be cancelled and this new
-  ///                        request will be placed. If `false` and an existing request is active, a
-  ///                        new request will not be placed and the existing active request will be
-  ///                        returned immediately instead.
-  ///   - cancelQuietly: Indicates if this request should cancel quietly without returning an error.
-  ///                    If `false`, cancellations will be treated as an error
-  ///                    (`NetworkError.cancelled`).
-  ///   - completion: Handler invoked when the request completes and a response is received. This
-  ///                 handler transforms the raw response into a `Result` with the saved file URL as
-  ///                 its success value and a `NetworkError` as its failure value.
+  ///   - tag: Custom tag for identifying this request. One will be generated
+  ///          automatically if unspecified.
+  ///   - overwriteExisting: Indicates if this request should overwrite an
+  ///                        existing request with the same tag. If so, the
+  ///                        existing request will be cancelled and this new
+  ///                        request will be placed. If `false` and an existing
+  ///                        request is active, a new request will not be placed
+  ///                        and the existing active request will be returned
+  ///                        immediately instead.
+  ///   - cancelQuietly: Indicates if this request should cancel quietly without
+  ///                    returning an error. If `false`, cancellations will be
+  ///                    treated as an error (`NetworkError.cancelled`).
+  ///   - completion: Handler invoked when the request completes and a response
+  ///                 is received. This handler transforms the raw response into
+  ///                 a `Result` with the saved file URL as its success value
+  ///                 and a `NetworkError` as its failure value.
   @discardableResult public func download(
     from url: URLConvertible,
     to directory: URL,

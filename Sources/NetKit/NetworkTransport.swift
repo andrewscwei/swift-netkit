@@ -5,19 +5,22 @@ import Foundation
 
 /// An object delegated to making JSON network requests.
 ///
-/// When parsing a response data of type `T`, if `T` conforms to `ErrorConvertible` and an error can
-/// be constructed from the data, expect a `Result.failure` in the response handlers with an
-/// appropriate `NetworkError` wrapping the constructed error as its `cause`. As such, it is best to
-/// handle server provided error messages in the `ErrorConvertible` data type and unwrap the message
-/// from the `NetworkError` when a response is received. To simplify this process, it is recommended
-/// to use an extension for `NetworkError` specific to the application to automatically extract the
+/// When parsing a response data of type `T`, if `T` conforms to
+/// `ErrorConvertible` and an error can be constructed from the data, expect a
+/// `Result.failure` in the response handlers with an appropriate `NetworkError`
+/// wrapping the constructed error as its `cause`. As such, it is best to handle
+/// server provided error messages in the `ErrorConvertible` data type and
+/// unwrap the message from the `NetworkError` when a response is received. To
+/// simplify this process, it is recommended to use an extension for
+/// `NetworkError` specific to the application to automatically extract the
 /// error message.
 public class NetworkTransport {
 
   /// Default `NetworkTransportPolicy` to use when one is not provided.
   class DefaultPolicy: NetworkTransportPolicy {}
 
-  /// Specifies the log mode that governs how `NetworkTransport` outputs logs (if any).
+  /// Specifies the log mode that governs how `NetworkTransport` outputs logs
+  /// (if any).
   public var logMode: LogMode = .none
 
   /// Dispatch queue for thread-safe read and write of mutable members.
@@ -29,7 +32,8 @@ public class NetworkTransport {
   /// Map of active network requests accessible by their tags.
   var requestQueue: [String: Request] = [:]
 
-  /// Creates a new `NetworkTransport` instance using the default `NetworkTransportPolicy`.
+  /// Creates a new `NetworkTransport` instance using the default
+  /// `NetworkTransportPolicy`.
   public convenience init() {
     self.init(policy: DefaultPolicy())
   }
@@ -42,8 +46,8 @@ public class NetworkTransport {
     self.policy = policy
   }
 
-  /// Gets the active request by its tag name. An active request refers to an existing request that
-  /// is not cancelled, finished or suspended.
+  /// Gets the active request by its tag name. An active request refers to an
+  /// existing request that is not cancelled, finished or suspended.
   ///
   /// - Parameter tag: The tag associated with the request.
   ///
@@ -60,11 +64,12 @@ public class NetworkTransport {
   /// - Parameters:
   ///   - request: The request to add.
   ///   - tag: The tag to associate with the request.
-  ///   - overwriteExisting: Specifies if the new request should overwrite an existing one with the
-  ///                        same tag. The existing request will be subsequently cancelled.
+  ///   - overwriteExisting: Specifies if the new request should overwrite an
+  ///                        existing one with the same tag. The existing
+  ///                        request will be subsequently cancelled.
   ///
-  /// - Returns: Either the request that was added, or the existing request with the specified tag
-  ///            name if `overwriteExisting` is `false`.
+  /// - Returns: Either the request that was added, or the existing request with
+  ///            the specified tag name if `overwriteExisting` is `false`.
   @discardableResult func addRequestToQueue(request: Request, tag: String, overwriteExisting: Bool = true) -> Request {
     if !overwriteExisting, let existingRequest = getActiveRequest(tag: tag) {
       log(.default, mode: logMode) { "Adding request with tag <\(tag)> to queue... SKIP: A request already exists with that tag, returning the existing request instead" }

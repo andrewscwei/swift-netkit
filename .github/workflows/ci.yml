@@ -5,24 +5,20 @@ on:
     tags-ignore: ["v*"]
 jobs:
   build:
-    name: Build/Test
+    name: Build
     runs-on: macos-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
       - name: Authenticate private GitHub repos
         run: git config --global url."https://oauth2:${{ secrets.GH_ACCESS_TOKEN }}@github.com".insteadOf https://github.com
-      - name: Configure Ruby dependencies cache
-        uses: actions/cache@v2
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
         with:
-          path: vendor/bundle
-          key: ${{ runner.os }}-gems-${{ hashFiles('**/Gemfile.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-gems-
-      - name: Install Ruby dependencies
-        run: |
-          bundle config path vendor/bundle
-          bundle install
+          bundler-cache: true
       - name: Test
         run: bundle exec fastlane test
   notify:
@@ -31,7 +27,8 @@ jobs:
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
-      - uses: andrewscwei/slack-action@v1.0.0
+      - uses: andrewscwei/telegram-action@v1.0.0
         with:
           success: ${{ needs.build.result == 'success' }}
-          webhook-url: ${{ secrets.SLACK_DEVOPS_WEBHOOK_URL }}
+          bot-token: ${{ secrets.TELEGRAM_DEVOPS_BOT_TOKEN }}
+          chat-id: ${{ secrets.TELEGRAM_DEVOPS_CHAT_ID }}

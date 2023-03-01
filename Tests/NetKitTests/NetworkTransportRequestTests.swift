@@ -100,64 +100,6 @@ class NetworkTransportRequestTests: XCTestCase {
     ], timeout: 5)
   }
 
-  func testJSONResponse() {
-    let expectationGet = XCTestExpectation(description: "[GET] Should get response status code 200")
-    let expectationDelete = XCTestExpectation(description: "[DELETE] should get response status code 200")
-    let expectationPost = XCTestExpectation(description: "[POST] should get response status code 200")
-    let expectationPut = XCTestExpectation(description: "[PUT] should get response status code 200")
-    let expectationPatch = XCTestExpectation(description: "[PATCH] should get response status code 200")
-
-    let networkTransport = NetworkTransport()
-
-    let params: [String: Any] = [
-      "foo": "foo",
-      "bar": "bar",
-    ]
-
-    networkTransport.request(MockEndpoint.get(params)) { (result: Result<Any, Error>) in
-      guard let data = try? result.get() as? [String: Any], let args = data["args"] as? [String: Any] else { return XCTFail() }
-      XCTAssertTrue(args["foo"] as? String == params["foo"] as? String)
-      XCTAssertTrue(args["bar"] as? String == params["bar"] as? String)
-      expectationGet.fulfill()
-    }
-
-    networkTransport.request(MockEndpoint.delete(params)) { (result: Result<Any, Error>) in
-      guard let data = try? result.get() as? [String: Any], let args = data["args"] as? [String: Any] else { return XCTFail() }
-      XCTAssertTrue(args["foo"] as? String == params["foo"] as? String)
-      XCTAssertTrue(args["bar"] as? String == params["bar"] as? String)
-      expectationDelete.fulfill()
-    }
-
-    networkTransport.request(MockEndpoint.post(params)) { (result: Result<Any, Error>) in
-      guard let data = try? result.get() as? [String: Any], let args = data["json"] as? [String: Any] else { return XCTFail() }
-      XCTAssertTrue(args["foo"] as? String == params["foo"] as? String)
-      XCTAssertTrue(args["bar"] as? String == params["bar"] as? String)
-      expectationPost.fulfill()
-    }
-
-    networkTransport.request(MockEndpoint.put(params)) { (result: Result<Any, Error>) in
-      guard let data = try? result.get() as? [String: Any], let args = data["json"] as? [String: Any] else { return XCTFail() }
-      XCTAssertTrue(args["foo"] as? String == params["foo"] as? String)
-      XCTAssertTrue(args["bar"] as? String == params["bar"] as? String)
-      expectationPut.fulfill()
-    }
-
-    networkTransport.request(MockEndpoint.patch(params)) { (result: Result<Any, Error>) in
-      guard let data = try? result.get() as? [String: Any], let args = data["json"] as? [String: Any] else { return XCTFail() }
-      XCTAssertTrue(args["foo"] as? String == params["foo"] as? String)
-      XCTAssertTrue(args["bar"] as? String == params["bar"] as? String)
-      expectationPatch.fulfill()
-    }
-
-    wait(for: [
-      expectationGet,
-      expectationDelete,
-      expectationPost,
-      expectationPut,
-      expectationPatch,
-    ], timeout: 5)
-  }
-
   func testVoidResponse() {
     let expectation200 = XCTestExpectation(description: "[GET] Should get response status code 200")
     let expectation204 = XCTestExpectation(description: "[GET] Should get response status code 204")

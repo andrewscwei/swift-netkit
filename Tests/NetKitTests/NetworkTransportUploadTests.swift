@@ -53,31 +53,6 @@ class NetworkTransportUploadTests: XCTestCase {
     ], timeout: 5)
   }
 
-  func testJSONResponse() {
-    let expectationPost = XCTestExpectation(description: "[POST] should get response status code 200")
-
-    let networkTransport = NetworkTransport()
-
-    let params: [String: Any] = [
-      "foo": "foo",
-      "bar": "bar",
-      "file": Data("Hello, World!".utf8),
-    ]
-
-    networkTransport.upload(MockEndpoint.post(params)) { (result: Result<Any, Error>) in
-      guard let data = try? result.get() as? [String: Any], let form = data["form"] as? [String: Any], let files = data["files"] as? [String: Any] else { return XCTFail() }
-
-      XCTAssertTrue(form["foo"] as? String == params["foo"] as? String)
-      XCTAssertTrue(form["bar"] as? String == params["bar"] as? String)
-      XCTAssertTrue(files["file"] as? String == String(data: params["file"] as! Data, encoding: .utf8))
-      expectationPost.fulfill()
-    }
-
-    wait(for: [
-      expectationPost,
-    ], timeout: 5)
-  }
-
   func testVoidResponse() {
     let expectation200 = XCTestExpectation(description: "[POST] Should get response status code 200")
     let expectation204 = XCTestExpectation(description: "[POST] Should get response status code 204")

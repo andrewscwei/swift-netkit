@@ -3,29 +3,32 @@
 import Alamofire
 import Foundation
 
-/// Types conforming to this protocol dictates certain behaviors of a `NetworkTransport` and
-/// intercepts its requests prior to placing them.
+/// Types conforming to this protocol dictates certain behaviors of a
+/// `NetworkTransport` and intercepts its requests prior to placing them.
 public protocol NetworkTransportPolicy: Alamofire.RequestInterceptor {
 
-  /// Replaces the host for the specified `URLRequest`. Provide a successful `Result` of `nil` to
-  /// leave the original host untouched.
+  /// Replaces the host for the specified `URLRequest`. Provide a successful
+  /// `Result` of `nil` to leave the original host untouched.
   func resolveHost(for urlRequest: URLRequest, completion: @escaping (Result<String?, Error>) -> Void)
 
-  /// Modifies the headers for the specified `URLRequest`. Headers are added to the current request.
+  /// Modifies the headers for the specified `URLRequest`. Headers are added to
+  /// the current request.
   func resolveHeaders(for urlRequest: URLRequest, completion: @escaping (Result<[String: String], Error>) -> Void)
 
   /// Validates the response.
   ///
   /// - Parameter response: The response.
   ///
-  /// - Returns: A `Result` indiciating whether validation was a success (with no value) or a
-  ///            failure (with the error).
+  /// - Returns: A `Result` indicating whether validation was a success (with no
+  ///            value) or a failure (with the error).
   func validate(response: HTTPURLResponse) -> Result<Void, Error>
 
-  /// Intercepts and parses the response result, then returns the parsed result to the client.
+  /// Intercepts and parses the response result, then returns the parsed result
+  /// to the client.
   ///
   /// - Parameters:
-  ///   - result: The `Result` from the network request initiated by the `NetworkTransport`.
+  ///   - result: The `Result` from the network request initiated by the
+  ///             `NetworkTransport`.
   ///   - statusCode: The status code associated with the `Result`.
   func parseResult<T>(result: Result<T, Error>, statusCode: Int) -> Result<T, Error>
 }

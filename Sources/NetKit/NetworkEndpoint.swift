@@ -3,8 +3,8 @@
 import Alamofire
 import Foundation
 
-/// A type describing the API endpoint of which a `NetworkTransport` will be communicating with when
-/// making network requests.
+/// A type describing the API endpoint of which a `NetworkTransport` will be
+/// communicating with when making network requests.
 public protocol NetworkEndpoint: URLConvertible {
 
   typealias Descriptor = (method: HTTPMethod, path: String)
@@ -18,9 +18,9 @@ public protocol NetworkEndpoint: URLConvertible {
   /// Headers to set for each request.
   var headers: [String: String] { get }
 
-  /// The parameters of this endpoint. Depending on the request method, these parameters will either
-  /// be encoded into the URL as query strings or the request body as JSON/multipart form
-  /// parameters.
+  /// The parameters of this endpoint. Depending on the request method, these
+  /// parameters will either be encoded into the URL as query strings or the
+  /// request body as JSON/multipart form parameters.
   var parameters: [String: Any]? { get }
 
   /// The host URL of the endpoint, (i.e. `https://www.example.com`).

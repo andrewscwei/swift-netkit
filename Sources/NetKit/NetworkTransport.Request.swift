@@ -5,27 +5,31 @@ import Foundation
 
 extension NetworkTransport {
 
-  /// Sends an async request to the `NetworkEndpoint` provided and parses the response as a `Result`
-  /// with a success value of decodable type `T`.
+  /// Sends an async request to the `NetworkEndpoint` provided and parses the
+  /// response as a `Result` with a success value of decodable type `T`.
   ///
   /// - Parameters:
   ///   - endpoint: The `NetworkEndpoint`.
   ///   - queue: The dispatch queue used for placing the request.
-  ///   - tag: Custom tag for identifying this request. One will be generated automatically if
-  ///          unspecified.
-  ///   - overwriteExisting: Indicates if this request should overwrite an existing request with the
-  ///                        same tag. If so, the existing request will be cancelled and this new
-  ///                        request will be placed. If `false` and an existing request is active, a
-  ///                        new request will not be placed and the existing active request will be
-  ///                        returned immediately instead.
-  ///   - cancelQuietly: Indicates if this request should cancel quietly without returning an error.
-  ///                    If `false`, cancellations will be treated as an error
-  ///                    (`NetworkError.cancelled`).
-  ///   - completion: Handler invoked when the request completes and a response is received. This
-  ///                 handler transforms the raw response into a `Result` with codable type `T` as
-  ///                 its success value and a `NetworkError` as its failure value. More fine-grained
-  ///                 parsing using the response status code is controlled by the active
-  ///                 `NetworkTransportPolicy`, via its member `parseResponse(_:statusCode:)`.
+  ///   - tag: Custom tag for identifying this request. One will be generated
+  ///          automatically if unspecified.
+  ///   - overwriteExisting: Indicates if this request should overwrite an
+  ///                        existing request with the same tag. If so, the
+  ///                        existing request will be cancelled and this new
+  ///                        request will be placed. If `false` and an existing
+  ///                        request is active, a new request will not be placed
+  ///                        and the existing active request will be returned
+  ///                        immediately instead.
+  ///   - cancelQuietly: Indicates if this request should cancel quietly without
+  ///                    returning an error. If `false`, cancellations will be
+  ///                    treated as an error (`NetworkError.cancelled`).
+  ///   - completion: Handler invoked when the request completes and a response
+  ///                 is received. This handler transforms the raw response into
+  ///                 a `Result` with codable type `T` as its success value and
+  ///                 a `NetworkError` as its failure value. More fine-grained
+  ///                 parsing using the response status code is controlled by
+  ///                 the active `NetworkTransportPolicy`, via its member
+  ///                 `parseResponse(_:statusCode:)`.
   ///
   /// - Returns: The `Request` object.
   @discardableResult public func request<T: Decodable>(
@@ -76,28 +80,32 @@ extension NetworkTransport {
     return addRequestToQueue(request: request, tag: tag)
   }
 
-  /// Sends an async request to the `NetworkEndpoint` provided and parses the response as a `Result`
-  /// with no success value (i.e. when the payload is discardable or when the status code is
-  /// expected to be `204`).
+  /// Sends an async request to the `NetworkEndpoint` provided and parses the
+  /// response as a `Result` with no success value (i.e. when the payload is
+  /// discardable or when the status code is expected to be `204`).
   ///
   /// - Parameters:
   ///   - endpoint: The `NetworkEndpoint`.
   ///   - queue: The dispatch queue used for placing the request.
-  ///   - tag: Custom tag for identifying this request. One will be generated automatically if
-  ///          unspecified.
-  ///   - overwriteExisting: Indicates if this request should overwrite an existing request with the
-  ///                        same tag. If so, the existing request will be cancelled and this new
-  ///                        request will be placed. If `false` and an existing request is active, a
-  ///                        new request will not be placed and the existing active request will be
-  ///                        returned immediately instead.
-  ///   - cancelQuietly: Indicates if this request should cancel quietly without returning an error.
-  ///                    If `false`, cancellations will be treated as an error
-  ///                    (`NetworkError.cancelled`).
-  ///   - completion: Handler invoked when the request completes and a response is received. This
-  ///                 handler transforms the raw response into a `Result` with void as its success
-  ///                 value and a `NetworkError` as its failure value. More fine-grained parsing
-  ///                 using the response status code is controlled by the active
-  ///                 `NetworkTransportPolicy`, via its member `parseResponse(_:statusCode:)`.
+  ///   - tag: Custom tag for identifying this request. One will be generated
+  ///          automatically if unspecified.
+  ///   - overwriteExisting: Indicates if this request should overwrite an
+  ///                        existing request with the same tag. If so, the
+  ///                        existing request will be cancelled and this new
+  ///                        request will be placed. If `false` and an existing
+  ///                        request is active, a new request will not be placed
+  ///                        and the existing active request will be returned
+  ///                        immediately instead.
+  ///   - cancelQuietly: Indicates if this request should cancel quietly without
+  ///                    returning an error. If `false`, cancellations will be
+  ///                    treated as an error (`NetworkError.cancelled`).
+  ///   - completion: Handler invoked when the request completes and a response
+  ///                 is received. This handler transforms the raw response into
+  ///                 a `Result` with void as its success value and a
+  ///                 `NetworkError` as its failure value. More fine-grained
+  ///                 parsing using the response status code is controlled by
+  ///                 the active `NetworkTransportPolicy`, via its member
+  ///                 `parseResponse(_:statusCode:)`.
   ///
   /// - Returns: The `Request` object.
   @discardableResult public func request(
@@ -185,7 +193,7 @@ extension NetworkTransport {
 
   /// Returns the sanitized `Parameters` of a `NetworkEndpoint`.
   ///
-  /// - Parameter endpoint: The `NetworkEntpoint`.
+  /// - Parameter endpoint: The `NetworkEndpoint`.
   ///
   /// - Returns: The `Parameters`.
   private func getSanitizedParameters(for endpoint: NetworkEndpoint) -> Parameters? {
