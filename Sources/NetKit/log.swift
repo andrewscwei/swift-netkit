@@ -47,7 +47,8 @@ func log(_ level: OSLogType = .info, isPublic: Bool = true, mode: LogMode = .non
 
 /// Returns the logging symbol (in compact mode) of the specified log level.
 ///
-/// - Parameter level: The log level.
+/// - Parameters:
+///   - level: The log level.
 ///
 /// - Returns: The log symbol.
 private func getCompactSymbol(for level: OSLogType) -> String {

@@ -193,7 +193,8 @@ extension NetworkTransport {
 
   /// Returns the sanitized `Parameters` of a `NetworkEndpoint`.
   ///
-  /// - Parameter endpoint: The `NetworkEndpoint`.
+  /// - Parameters:
+  ///   - endpoint: The `NetworkEndpoint`.
   ///
   /// - Returns: The `Parameters`.
   private func getSanitizedParameters(for endpoint: NetworkEndpoint) -> Parameters? {
@@ -203,7 +204,8 @@ extension NetworkTransport {
 
   /// Returns the `ParameterEncoder` based on the endpoint request method.
   ///
-  /// - Parameter endpoint: The `NetworkEndpoint`.
+  /// - Parameters:
+  ///   - endpoint: The `NetworkEndpoint`.
   ///
   /// - Returns: The `ParameterEncoder`.
   private func getParameterEncoder(for endpoint: NetworkEndpoint) -> ParameterEncoding {

@@ -49,7 +49,8 @@ public class NetworkTransport {
   /// Gets the active request by its tag name. An active request refers to an
   /// existing request that is not cancelled, finished or suspended.
   ///
-  /// - Parameter tag: The tag associated with the request.
+  /// - Parameters:
+  ///   - tag: The tag associated with the request.
   ///
   /// - Returns: The active request if there is a match.
   public func getActiveRequest(tag: String) -> Request? {
@@ -87,7 +88,8 @@ public class NetworkTransport {
 
   /// Cancels a request and removes it from the queue.
   ///
-  /// - Parameter tag: The tag associated with the request.
+  /// - Parameters:
+  ///   - tag: The tag associated with the request.
   ///
   /// - Returns: The removed request.
   @discardableResult func removeRequestFromQueue(tag: String) -> Request? {
@@ -115,7 +117,8 @@ public class NetworkTransport {
 
   /// Generates a request tag from the given `NetworkEndpoint`.
   ///
-  /// - Parameter endpoint: The `NetworkEndpoint`.
+  /// - Parameters:
+  ///   - endpoint: The `NetworkEndpoint`.
   ///
   /// - Returns: The generated tag.
   func generateTagFromEndpoint(_ endpoint: NetworkEndpoint) -> String {

@@ -133,7 +133,8 @@ extension NetworkError {
 
   /// Creates a `NetworkError` from a `URLError`.
   ///
-  /// - Parameter error: The `URLError`.
+  /// - Parameters:
+  ///   - error: The `URLError`.
   ///
   /// - Returns: The `NetworkError`.
   public static func from(_ error: URLError) -> NetworkError {
@@ -151,7 +152,8 @@ extension NetworkError {
 
   /// Creates a `NetworkError` from an `AFError`.
   ///
-  /// - Parameter error: The `AFError`.
+  /// - Parameters:
+  ///   - error: The `AFError`.
   ///
   /// - Returns: The `NetworkError`.
   public static func from(_ error: AFError) -> NetworkError {
@@ -176,7 +178,8 @@ extension NetworkError {
 
   /// Creates a `NetworkError` from any `Error`.
   ///
-  /// - Parameter error: The `Error`.
+  /// - Parameters:
+  ///   - error: The `Error`.
   ///
   /// - Returns: The `NetworkError`.
   public static func from(_ error: Error) -> NetworkError {

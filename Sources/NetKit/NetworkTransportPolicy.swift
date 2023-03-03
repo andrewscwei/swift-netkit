@@ -17,7 +17,8 @@ public protocol NetworkTransportPolicy: Alamofire.RequestInterceptor {
 
   /// Validates the response.
   ///
-  /// - Parameter response: The response.
+  /// - Parameters:
+  ///   - response: The response.
   ///
   /// - Returns: A `Result` indicating whether validation was a success (with no
   ///            value) or a failure (with the error).

@@ -6,7 +6,8 @@ public protocol NetworkErrorConvertible {
 
   /// Constructs an `NetworkError`.
   ///
-  /// - Parameter statusCode: The status code.
+  /// - Parameters:
+  ///   - statusCode: The status code.
   ///
   /// - Throws: When there is an error (ironically) constructing the error.
   ///
