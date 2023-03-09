@@ -24,7 +24,7 @@ public class NetworkTransport {
   public var logMode: LogMode = .none
 
   /// Dispatch queue for thread-safe read and write of mutable members.
-  let lockQueue: DispatchQueue = .init(label: "io.ghozt.netkit.NetworkTransport", qos: .utility)
+  let lockQueue: DispatchQueue = .init(label: "sh.ghozt.netkit.NetworkTransport", qos: .utility)
 
   /// The policy of this `NetworkTransport`.
   var policy: NetworkTransportPolicy
