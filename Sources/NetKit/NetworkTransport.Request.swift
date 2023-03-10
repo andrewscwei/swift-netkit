@@ -4,7 +4,6 @@ import Alamofire
 import Foundation
 
 extension NetworkTransport {
-
   /// Sends an async request to the `NetworkEndpoint` provided and parses the
   /// response as a `Result` with a success value of decodable type `T`.
   ///

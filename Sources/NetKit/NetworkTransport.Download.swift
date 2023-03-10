@@ -4,7 +4,6 @@ import Alamofire
 import Foundation
 
 extension NetworkTransport {
-
   /// Downloads a file from the specified `URLConvertible` to the specified
   /// directory, file name and extension. If a file already exists at the target
   /// path, it is simply replaced with the downloaded file.

@@ -8,7 +8,6 @@ import Foundation
 /// up to the application to extend this error to conform to `LocalizedError`
 /// and provide its own localized descriptions.
 public enum NetworkError: Error {
-
   /// A type of network error whose nature is unknown or is unhandled by
   /// `NetworkTransport`.
   case unknown(code: Int? = nil, cause: Error? = nil)
@@ -101,7 +100,6 @@ public enum NetworkError: Error {
 }
 
 extension NetworkError: CustomNSError {
-
   public static var errorDomain: String { "network" }
 
   public var errorCode: Int {
@@ -130,7 +128,6 @@ extension NetworkError: CustomNSError {
 }
 
 extension NetworkError {
-
   /// Creates a `NetworkError` from a `URLError`.
   ///
   /// - Parameters:

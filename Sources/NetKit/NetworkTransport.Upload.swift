@@ -5,7 +5,6 @@ import Foundation
 import SwiftyJSON
 
 extension NetworkTransport {
-
   /// Sends an async multipart request to the `NetworkEndpoint` provided and
   /// parses the response as a `Result` with a success value of codable type
   /// `T`.

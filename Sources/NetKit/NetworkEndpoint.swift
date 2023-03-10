@@ -6,7 +6,6 @@ import Foundation
 /// A type describing the API endpoint of which a `NetworkTransport` will be
 /// communicating with when making network requests.
 public protocol NetworkEndpoint: URLConvertible {
-
   typealias Descriptor = (method: HTTPMethod, path: String)
 
   /// A tuple containing the request method and path of the endpoint.
@@ -28,7 +27,6 @@ public protocol NetworkEndpoint: URLConvertible {
 }
 
 extension NetworkEndpoint {
-
   /// The request method of this endpoint.
   public var method: HTTPMethod { descriptor.method }
 
