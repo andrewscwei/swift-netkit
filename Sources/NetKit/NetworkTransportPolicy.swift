@@ -81,8 +81,8 @@ extension NetworkTransportPolicy {
     let statusCode = response.statusCode
 
     switch statusCode {
-    case 401: return .failure(NetworkError.unauthorized(code: statusCode))
-    case 429: return .failure(NetworkError.tooManyRequests(code: statusCode))
+    case 401: return .failure(NetworkError.unauthorized(statusCode: statusCode))
+    case 429: return .failure(NetworkError.tooManyRequests(statusCode: statusCode))
     default: return .success(())
     }
   }
@@ -90,19 +90,19 @@ extension NetworkTransportPolicy {
   public func parseResult<T>(result: Result<T, Error>, statusCode: Int) -> Result<T, Error> {
     switch result {
     case .failure(let error):
-      return .failure(error)
-    case .success(let data):
-      if let error = try? (data as? NetworkErrorConvertible)?.asNetworkError(statusCode: statusCode) {
-        return .failure(error)
+      return .failure(NetworkError.from(error))
+    case .success(let payload):
+      if let networkError = try? (payload as? NetworkErrorConvertible)?.asNetworkError(statusCode: statusCode) {
+        return .failure(networkError)
       }
 
       switch statusCode {
       case 400..<499:
-        return .failure(NetworkError.client(code: statusCode))
+        return .failure(NetworkError.client(statusCode: statusCode))
       case 500..<599:
-        return .failure(NetworkError.server(code: statusCode))
+        return .failure(NetworkError.server(statusCode: statusCode))
       default:
-        return .success(data)
+        return .success(payload)
       }
     }
   }

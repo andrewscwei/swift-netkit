@@ -74,8 +74,8 @@ extension NetworkTransport {
         if
           cancelQuietly,
           case .failure(let error) = response,
-          let error = error as? NetworkError,
-          case .cancelled = error
+          let networkError = error as? NetworkError,
+          case .cancelled = networkError
         {
           log(.debug, mode: weakSelf.logMode) { "Sending multipart \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... SKIP: Cancelled quietly" }
           return
@@ -156,8 +156,8 @@ extension NetworkTransport {
         if
           cancelQuietly,
           case .failure(let error) = response,
-          let error = error as? NetworkError,
-          case .cancelled = error
+          let networkError = error as? NetworkError,
+          case .cancelled = networkError
         {
           log(.debug, mode: weakSelf.logMode) { "Sending multipart \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... SKIP: Cancelled quietly" }
           return
@@ -181,21 +181,19 @@ extension NetworkTransport {
     switch response.result {
     case .failure(let error):
       let statusCode = response.response?.statusCode
-      let networkError = NetworkError.from(error)
 
       if let statusCode = statusCode {
-        log(.error, mode: logMode) { "Sending multipart \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... ERR: [\(statusCode)] \(networkError)" }
-        return policy.parseResult(result: .failure(networkError), statusCode: statusCode)
+        log(.error, mode: logMode) { "Sending multipart \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... ERR: [\(statusCode)] \(error)" }
+        return policy.parseResult(result: .failure(error), statusCode: statusCode)
       }
       else {
-        log(.error, mode: logMode) { "Sending multipart \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... ERR: \(networkError)" }
-        return .failure(networkError)
+        log(.error, mode: logMode) { "Sending multipart \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... ERR: \(error)" }
+        return .failure(NetworkError.from(error))
       }
     case .success(let data):
       guard let statusCode = response.response?.statusCode else {
-        let networkError: NetworkError = .noResponse
-        log(.error, mode: logMode) { "Sending multipart \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... ERR: \(networkError)" }
-        return .failure(networkError)
+        log(.error, mode: logMode) { "Sending multipart \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... ERR: No status code" }
+        return .failure(NetworkError.noResponse())
       }
 
       log(.debug, mode: logMode) { "Sending multipart \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... OK: [\(statusCode)] \(data)" }
