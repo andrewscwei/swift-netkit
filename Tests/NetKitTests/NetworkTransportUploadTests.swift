@@ -7,7 +7,7 @@ class NetworkTransportUploadTests: XCTestCase {
     case post([String: Any])
     case statusCode(code: Int)
 
-    var descriptor: Descriptor {
+    var pathDescriptor: PathDescriptor {
       switch self {
       case .post: return (.post, "/post")
       case .statusCode(let code): return (.post, "/status/\(code)")

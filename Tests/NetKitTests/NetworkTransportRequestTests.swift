@@ -11,7 +11,7 @@ class NetworkTransportRequestTests: XCTestCase {
     case patch([String: Any])
     case statusCode(code: Int)
 
-    var descriptor: Descriptor {
+    var pathDescriptor: PathDescriptor {
       switch self {
       case .get: return (.get, "/get")
       case .delete: return (.delete, "/delete")

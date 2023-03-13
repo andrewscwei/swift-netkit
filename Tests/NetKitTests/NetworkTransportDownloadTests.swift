@@ -6,7 +6,7 @@ class NetworkTransportDownloadTests: XCTestCase {
   enum MockEndpoint: NetworkEndpoint {
     case image
 
-    var descriptor: Descriptor {
+    var pathDescriptor: PathDescriptor {
       switch self {
       case .image: return (.get, "/image")
       }

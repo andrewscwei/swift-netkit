@@ -6,10 +6,10 @@ import Foundation
 /// A type describing the API endpoint of which a `NetworkTransport` will be
 /// communicating with when making network requests.
 public protocol NetworkEndpoint: URLConvertible {
-  typealias Descriptor = (method: HTTPMethod, path: String)
+  typealias PathDescriptor = (method: HTTPMethod, path: String)
 
   /// A tuple containing the request method and path of the endpoint.
-  var descriptor: Descriptor { get }
+  var pathDescriptor: PathDescriptor { get }
 
   /// The timeout interval in seconds.
   var timeout: TimeInterval { get }
@@ -28,10 +28,10 @@ public protocol NetworkEndpoint: URLConvertible {
 
 extension NetworkEndpoint {
   /// The request method of this endpoint.
-  public var method: HTTPMethod { descriptor.method }
+  public var method: HTTPMethod { pathDescriptor.method }
 
   /// The path of this endpoint (excluding the host, i.e. `/users/get`).
-  public var path: String { descriptor.path }
+  public var path: String { pathDescriptor.path }
 
   public var timeout: TimeInterval { 60 }
 

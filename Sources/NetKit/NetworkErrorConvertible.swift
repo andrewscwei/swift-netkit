@@ -3,7 +3,7 @@
 /// A type conforming to the `NetworkErrorConvertible` protocol can construct an
 /// `NetworkError` from itself.
 public protocol NetworkErrorConvertible {
-  /// Constructs an `NetworkError`.
+  /// Constructs a `NetworkError`.
   ///
   /// - Parameters:
   ///   - statusCode: The status code.
