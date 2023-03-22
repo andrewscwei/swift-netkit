@@ -14,6 +14,7 @@ extension NetworkTransport {
   ///   - fileName: The name of the file to save to (defaults to a random UUID
   ///               string).
   ///   - ext: Optional extension of the file to save to.
+  ///   - queue: The dispatch queue used for placing the request.
   ///   - tag: Custom tag for identifying this request. One will be generated
   ///          automatically if unspecified.
   ///   - overwriteExisting: Indicates if this request should overwrite an
@@ -35,6 +36,7 @@ extension NetworkTransport {
     to directory: URL,
     fileName: String = UUID().uuidString,
     extension ext: String? = nil,
+    queue: DispatchQueue = .global(qos: .utility),
     tag: String? = nil,
     overwriteExisting: Bool = true,
     cancelQuietly: Bool = true,
@@ -58,7 +60,7 @@ extension NetworkTransport {
       return (fileURL, [.removePreviousFile, .createIntermediateDirectories])
     }
 
-    let request = AF.download(url, interceptor: policy, to: destination).response { [weak self] in
+    let request = AF.download(url, interceptor: policy, to: destination).response(queue: queue) { [weak self] in
       guard let weakSelf = self else { return completion(.failure(NetworkError.unknown)) }
 
       let response = weakSelf.parseResponse($0, for: url, tag: tag)
