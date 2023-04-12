@@ -71,7 +71,7 @@ extension NetworkTransport {
         let networkError = error as? NetworkError,
         case .cancelled = networkError
       {
-        log(.debug, mode: weakSelf.logMode) { "Downloading from URL \"\(url)\" with tag <\(tag)>... SKIP: Cancelled quietly" }
+        log(.default, mode: weakSelf.logMode) { "Downloading from URL \"\(url)\" with tag <\(tag)>... SKIP: Cancelled quietly" }
         return
       }
 

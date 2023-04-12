@@ -19,7 +19,7 @@ public enum LogMode {
 ///   - functionName: Name of the function where this function was called.
 ///   - lineNumber: Line number where this function was called.
 ///   - message: The block that returns the message.
-func log(_ level: OSLogType = .info, isPublic: Bool = true, mode: LogMode = .none, fileName: String = #file, functionName: String = #function, lineNumber: Int = #line, message: () -> String) {
+func log(_ level: OSLogType = .default, isPublic: Bool = true, mode: LogMode = .none, fileName: String = #file, functionName: String = #function, lineNumber: Int = #line, message: () -> String) {
   guard mode != .none else { return }
 
 #if DEBUG
