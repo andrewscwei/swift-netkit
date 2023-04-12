@@ -184,10 +184,20 @@ extension NetworkTransport {
 
       if let statusCode = statusCode {
         log(.error, mode: logMode) { "Sending multipart \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... ERR: [\(statusCode)] \(error)" }
+
+        if logMode != .none, let data = response.data, let json = try? JSONSerialization.jsonObject(with: data) {
+          log(.error, mode: logMode) { "Raw payload = \(json)" }
+        }
+
         return policy.parseResult(result: .failure(error), statusCode: statusCode)
       }
       else {
         log(.error, mode: logMode) { "Sending multipart \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... ERR: \(error)" }
+
+        if logMode != .none, let data = response.data, let json = try? JSONSerialization.jsonObject(with: data) {
+          log(.error, mode: logMode) { "Raw payload = \(json)" }
+        }
+        
         return .failure(NetworkError.from(error))
       }
     case .success(let data):
