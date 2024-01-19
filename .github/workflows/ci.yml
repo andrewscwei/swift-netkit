@@ -9,12 +9,12 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: recursive
-          token: ${{ secrets.GH_ACCESS_TOKEN }}
+          token: ${{ github.token }}
       - name: Authenticate private GitHub repos
-        run: git config --global url."https://oauth2:${{ secrets.GH_ACCESS_TOKEN }}@github.com".insteadOf https://github.com
+        run: git config --global url."https://oauth2:${{ github.token }}@github.com".insteadOf https://github.com
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
@@ -30,5 +30,6 @@ jobs:
       - uses: andrewscwei/telegram-action@v1.0.0
         with:
           success: ${{ needs.build.result == 'success' }}
+          cancelled: ${{ needs.build.result == 'cancelled' }}
           bot-token: ${{ secrets.TELEGRAM_DEVOPS_BOT_TOKEN }}
           chat-id: ${{ secrets.TELEGRAM_DEVOPS_CHAT_ID }}
