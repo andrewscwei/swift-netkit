@@ -11,11 +11,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          token: ${{ github.token }}
-      - name: Authenticate private GitHub repos
-        run: git config --global url."https://oauth2:${{ github.token }}@github.com".insteadOf https://github.com
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
