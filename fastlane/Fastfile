@@ -11,7 +11,9 @@ platform :ios do
       package_path: './',
       destination: 'platform=iOS Simulator,name=iPhone 14',
       scheme: "NetKit",
-      code_coverage: true
+      code_coverage: true,
+      result_bundle: true,
+      output_directory: Dir.pwd + "/test_output"
     )
   end
 end
