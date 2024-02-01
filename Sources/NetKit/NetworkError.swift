@@ -1,5 +1,3 @@
-// © GHOZT
-
 import Alamofire
 import Foundation
 

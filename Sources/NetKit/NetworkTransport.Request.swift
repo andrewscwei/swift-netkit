@@ -1,5 +1,3 @@
-// © GHOZT
-
 import Alamofire
 import Foundation
 
@@ -183,7 +181,7 @@ extension NetworkTransport {
         if logMode != .none, let data = response.data, let json = try? JSONSerialization.jsonObject(with: data) {
           log(.error, mode: logMode) { "Raw payload = \(json)" }
         }
-        
+
         return .failure(NetworkError.from(error))
       }
     case .success(let data):

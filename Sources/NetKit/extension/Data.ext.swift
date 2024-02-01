@@ -1,5 +1,3 @@
-// © GHOZT
-
 import Foundation
 
 extension Data {

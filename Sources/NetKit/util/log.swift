@@ -1,5 +1,3 @@
-// © GHOZT
-
 import os.log
 import Foundation
 
@@ -32,7 +30,7 @@ func log(_ level: OSLogType = .default, isPublic: Bool = true, mode: LogMode = .
     print(getCompactSymbol(for: level), message())
   case .verbose:
     let category = "\(fileName ?? "???"):\(lineNumber)"
-    
+
     if isPublic {
       os_log("%{public}@", log: OSLog(subsystem: subsystem, category: category), type: level, message())
     }
