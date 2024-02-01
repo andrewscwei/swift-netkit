@@ -1,4 +1,4 @@
-# NetKit [![CI](https://github.com/andrewscwei/swift-netkit/workflows/CI/badge.svg?branch=master)](https://github.com/andrewscwei/swift-netkit/actions/workflows/ci.yml?query=branch%3Amaster) [![CD](https://github.com/andrewscwei/swift-netkit/workflows/CD/badge.svg?branch=master)](https://github.com/andrewscwei/swift-netkit/actions/workflows/cd.yml?query=branch%3Amaster)
+# NetKit [![CI](https://github.com/andrewscwei/swift-netkit/workflows/CI/badge.svg)](https://github.com/andrewscwei/swift-netkit/actions/workflows/ci.yml) [![CD](https://github.com/andrewscwei/swift-netkit/workflows/CD/badge.svg)](https://github.com/andrewscwei/swift-netkit/actions/workflows/cd.yml)
 
 ## Setup
 
