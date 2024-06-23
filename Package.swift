@@ -26,11 +26,6 @@ enum Environment: String {
   }
 }
 
-var dependencies: [Package.Dependency] = [
-  .package(url: "https://github.com/Alamofire/Alamofire.git", .upToNextMajor(from: "5.8.1")),
-  .package(url: "https://github.com/SwiftyJSON/SwiftyJSON.git", .upToNextMajor(from: "5.0.1")),
-]
-
 switch Environment.get() {
 case .local:
   break
@@ -48,7 +43,10 @@ let package = Package(
       name: "NetKit",
       targets: ["NetKit"]),
   ],
-  dependencies: dependencies,
+  dependencies: [
+    .package(url: "https://github.com/Alamofire/Alamofire.git", .upToNextMajor(from: "5.8.1")),
+    .package(url: "https://github.com/SwiftyJSON/SwiftyJSON.git", .upToNextMajor(from: "5.0.1")),
+  ],
   targets: [
     .target(
       name: "NetKit",

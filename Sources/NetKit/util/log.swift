@@ -26,7 +26,6 @@ func log(_ level: OSLogType = .default, isPublic: Bool = true, mode: LogMode = .
 
   switch mode {
   case .compact:
-    guard level != .default else { return }
     print(getCompactSymbol(for: level), message())
   case .verbose:
     let category = "\(fileName ?? "???"):\(lineNumber)"
@@ -51,10 +50,8 @@ func log(_ level: OSLogType = .default, isPublic: Bool = true, mode: LogMode = .
 /// - Returns: The log symbol.
 private func getCompactSymbol(for level: OSLogType) -> String {
   switch level {
-  case .fault: return "💀"
-  case .error: return "⚠️"
-  case .debug: return "👾"
-  case .info: return "🤖"
-  default: return ""
+  case .fault: return "💀🌐"
+  case .error: return "⚠️🌐"
+  default: return "🌐"
   }
 }

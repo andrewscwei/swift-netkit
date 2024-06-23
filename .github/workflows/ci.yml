@@ -1,8 +1,8 @@
 name: CI
 on:
+  pull_request:
   push:
-    branches: ["**"]
-    tags-ignore: ["v*"]
+    branches: ["!master"]
 jobs:
   build:
     name: Build
