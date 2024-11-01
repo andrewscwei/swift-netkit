@@ -15,7 +15,7 @@ import Foundation
 public class NetworkTransport {
 
   /// Default `NetworkTransportPolicy` to use when one is not provided.
-  class DefaultPolicy: NetworkTransportPolicy {}
+  final class DefaultPolicy: NetworkTransportPolicy {}
 
   /// Specifies the log mode that governs how `NetworkTransport` outputs logs
   /// (if any).

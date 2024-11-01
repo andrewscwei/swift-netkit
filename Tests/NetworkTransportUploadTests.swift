@@ -4,7 +4,7 @@ import XCTest
 class NetworkTransportUploadTests: XCTestCase {
 
   enum MockEndpoint: NetworkEndpoint {
-    case post([String: Any])
+    case post([String: Sendable])
     case statusCode(code: Int)
 
     var pathDescriptor: PathDescriptor {
