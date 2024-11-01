@@ -1,4 +1,4 @@
-// swift-tools-version:5.3
+// swift-tools-version:5.5
 
 import PackageDescription
 
@@ -8,51 +8,30 @@ import Glibc
 import Darwin.C
 #endif
 
-enum Environment: String {
-  case local
-  case development
-  case production
-
-  static func get() -> Environment {
-    if let envPointer = getenv("SWIFT_ENV"), let environment = Environment(rawValue: String(cString: envPointer)) {
-      return environment
-    }
-    else if let envPointer = getenv("CI"), String(cString: envPointer) == "true" {
-      return .production
-    }
-    else {
-      return .local
-    }
-  }
-}
-
-switch Environment.get() {
-case .local:
-  break
-case .development:
-  break
-case .production:
-  break
-}
-
 let package = Package(
   name: "NetKit",
-  platforms: [.iOS(.v11)],
+  platforms: [
+    .macOS(.v12),
+    .iOS(.v15),
+    .tvOS(.v15),
+    .watchOS(.v8)],
   products: [
     .library(
       name: "NetKit",
       targets: ["NetKit"]),
   ],
   dependencies: [
-    .package(url: "https://github.com/Alamofire/Alamofire.git", .upToNextMajor(from: "5.9.1")),
-    .package(url: "https://github.com/SwiftyJSON/SwiftyJSON.git", .upToNextMajor(from: "5.0.2")),
+    .package(url: "https://github.com/Alamofire/Alamofire.git", .upToNextMajor(from: "5.0.0")),
+    .package(url: "https://github.com/SwiftyJSON/SwiftyJSON.git", .upToNextMajor(from: "5.0.0")),
   ],
   targets: [
     .target(
       name: "NetKit",
-      dependencies: ["Alamofire", "SwiftyJSON"]),
+      dependencies: ["Alamofire", "SwiftyJSON"],
+      path: "Sources"),
     .testTarget(
       name: "NetKitTests",
-      dependencies: ["NetKit"]),
+      dependencies: ["NetKit"],
+      path: "Tests"),
   ]
 )

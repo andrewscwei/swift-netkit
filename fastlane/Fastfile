@@ -10,7 +10,7 @@ platform :ios do
   lane :test do
     scan(
       package_path: './',
-      destination: 'platform=iOS Simulator,name=iPhone 14 Pro',
+      destination: 'platform=iOS Simulator,OS=18.0,name=iPhone 16 Pro',
       scheme: "NetKit",
       code_coverage: true,
       result_bundle: true
