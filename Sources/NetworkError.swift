@@ -1,11 +1,11 @@
 import Alamofire
 import Foundation
 
-/// An `Error` conforming enum consisting of errors thrown by `NetworkTransport`
-/// operations. By default, none of the errors have an error description. It is
-/// up to the application to extend this error to conform to `LocalizedError`
-/// and provide its own localized descriptions.
+/// An `Error` conforming enum representing errors from `NetworkTransport`
+/// operations. By default, errors lack descriptions. Applications should
+/// extend this enum to conform to `LocalizedError` for localized descriptions.
 public enum NetworkError: Error {
+  
   /// A type of network error thrown when a request is cancelled.
   case cancelled(code: String? = nil, cause: Error? = nil)
 

@@ -2,6 +2,7 @@ import Alamofire
 import Foundation
 
 extension NetworkTransport {
+
   /// Downloads a file from the specified `URLConvertible` to the specified
   /// directory, file name and extension. If a file already exists at the target
   /// path, it is simply replaced with the downloaded file.
@@ -46,7 +47,7 @@ extension NetworkTransport {
 
     removeRequestFromQueue(tag: tag)
 
-    log(.debug, mode: logMode) { "Downloading from URL \"\(url)\" with tag <\(tag)>..." }
+    _log.debug("Downloading from URL \"\(url)\" with tag <\(tag)>...")
 
     let destination: DownloadRequest.Destination = { (_, _) in
       var fileURL = directory.appendingPathComponent(fileName)
@@ -69,7 +70,7 @@ extension NetworkTransport {
         let networkError = error as? NetworkError,
         case .cancelled = networkError
       {
-        log(.default, mode: weakSelf.logMode) { "Downloading from URL \"\(url)\" with tag <\(tag)>... SKIP: Cancelled quietly" }
+        _log.debug("Downloading from URL \"\(url)\" with tag <\(tag)>... SKIP: Cancelled quietly")
         return
       }
 
@@ -90,15 +91,15 @@ extension NetworkTransport {
   private func parseResponse(_ response: DownloadResponse<URL?, AFError>, for url: URLConvertible, tag: String) -> Result<URL, Error> {
     switch response.result {
     case .failure(let error):
-      log(.error, mode: logMode) { "Downloading from URL \"\(url)\" with tag <\(tag)>... ERR: \(error)" }
+      _log.error("Downloading from URL \"\(url)\" with tag <\(tag)>... ERR: \(error)")
       return .failure(NetworkError.from(error))
     case .success(let fileURL):
       if let fileURL = fileURL {
-        log(.debug, mode: logMode) { "Downloading from URL \"\(url)\" with tag <\(tag)>... OK: \(fileURL)" }
+        _log.debug("Downloading from URL \"\(url)\" with tag <\(tag)>... OK: \(fileURL)")
         return .success(fileURL)
       }
       else {
-        log(.error, mode: logMode) { "Downloading from URL \"\(url)\" with tag <\(tag)>... ERR: No file URL" }
+        _log.error("Downloading from URL \"\(url)\" with tag <\(tag)>... ERR: No file URL")
         return .failure(NetworkError.download)
       }
     }

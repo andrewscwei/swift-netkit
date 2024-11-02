@@ -4,6 +4,7 @@ import Foundation
 /// Types conforming to this protocol dictates certain behaviors of a
 /// `NetworkTransport` and intercepts its requests prior to placing them.
 public protocol NetworkTransportPolicy: Alamofire.RequestInterceptor {
+  
   /// Replaces the host for the specified `URLRequest`. Provide a successful
   /// `Result` of `nil` to leave the original host untouched.
   func resolveHost(for urlRequest: URLRequest, completion: @escaping (Result<String?, Error>) -> Void)

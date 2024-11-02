@@ -1,57 +1,73 @@
 import os.log
 import Foundation
 
-public enum LogMode {
-  case none
-  case compact
-  case verbose
-}
+struct Log: Sendable {
+  enum Mode {
+    case none
+    case unified
+    case console
+  }
 
-/// Logs a message to the unified logging system.
-///
-/// - Parameters:
-///   - level: The log level.
-///   - isPublic: Specifies if the log is publicly accessible.
-///   - mode: Specifies the log mode.
-///   - fileName: Name of the file where this function was called.
-///   - functionName: Name of the function where this function was called.
-///   - lineNumber: Line number where this function was called.
-///   - message: The block that returns the message.
-func log(_ level: OSLogType = .default, isPublic: Bool = true, mode: LogMode = .none, fileName: String = #file, functionName: String = #function, lineNumber: Int = #line, message: () -> String) {
-  guard mode != .none else { return }
+  let mode: Mode
 
-#if DEBUG
-  let fileName = fileName.components(separatedBy: "/").last?.components(separatedBy: ".").first
-  let subsystem = Bundle.main.bundleIdentifier ?? "app"
+  func `default`(_ message: String, isPublic: Bool = true, fileName: String = #file, functionName: String = #function, lineNumber: Int = #line) {
+    log(message, level: .default, isPublic: isPublic, fileName: fileName, functionName: functionName, lineNumber: lineNumber)
+  }
 
-  switch mode {
-  case .compact:
-    print(getCompactSymbol(for: level), message())
-  case .verbose:
-    let category = "\(fileName ?? "???"):\(lineNumber)"
+  func info(_ message: String, isPublic: Bool = true, fileName: String = #file, functionName: String = #function, lineNumber: Int = #line) {
+    log(message, level: .info, isPublic: isPublic, fileName: fileName, functionName: functionName, lineNumber: lineNumber)
+  }
 
-    if isPublic {
-      os_log("%{public}@", log: OSLog(subsystem: subsystem, category: category), type: level, message())
+  func debug(_ message: String, isPublic: Bool = true, fileName: String = #file, functionName: String = #function, lineNumber: Int = #line) {
+    log(message, level: .debug, isPublic: isPublic, fileName: fileName, functionName: functionName, lineNumber: lineNumber)
+  }
+
+  func error(_ message: String, isPublic: Bool = true, fileName: String = #file, functionName: String = #function, lineNumber: Int = #line) {
+    log(message, level: .error, isPublic: isPublic, fileName: fileName, functionName: functionName, lineNumber: lineNumber)
+  }
+
+  func fault(_ message: String, isPublic: Bool = true, fileName: String = #file, functionName: String = #function, lineNumber: Int = #line) {
+    log(message, level: .fault, isPublic: isPublic, fileName: fileName, functionName: functionName, lineNumber: lineNumber)
+  }
+
+  private func log(_ message: String, level: OSLogType = .info, isPublic: Bool, fileName: String, functionName: String, lineNumber: Int) {
+    guard mode != .none else { return }
+
+#if !DEBUG
+    guard  level != .debug else { return }
+#endif
+
+    if mode == .unified {
+      let fileName = fileName.components(separatedBy: "/").last?.components(separatedBy: ".").first
+      let subsystem = Bundle.main.bundleIdentifier ?? "app"
+      let category = "\(fileName ?? "???"):\(lineNumber)"
+
+      if isPublic {
+        os_log("%{public}@", log: OSLog(subsystem: subsystem, category: category), type: level, message)
+      }
+      else {
+        os_log("%{private}@", log: OSLog(subsystem: subsystem, category: category), type: level, message)
+      }
     }
     else {
-      os_log("%{private}@", log: OSLog(subsystem: subsystem, category: category), type: level, message())
+      guard level != .default else { return }
+      print(getSymbol(for: level), message)
     }
-  default:
-    break
   }
-#endif
+
+  private func getSymbol(for level: OSLogType) -> String {
+    switch level {
+    case .fault: return "💀"
+    case .error: return "⚠️"
+    case .debug: return "👾"
+    case .info: return "🤖"
+    default: return ""
+    }
+  }
 }
 
-/// Returns the logging symbol (in compact mode) of the specified log level.
-///
-/// - Parameters:
-///   - level: The log level.
-///
-/// - Returns: The log symbol.
-private func getCompactSymbol(for level: OSLogType) -> String {
-  switch level {
-  case .fault: return "💀🌐"
-  case .error: return "⚠️🌐"
-  default: return "🌐"
-  }
-}
+#if NETKIT_DEBUG
+let _log = Log(mode: .console)
+#else
+let _log = Log(mode: .none)
+#endif

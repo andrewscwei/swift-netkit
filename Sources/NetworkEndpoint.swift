@@ -1,8 +1,8 @@
 import Alamofire
 import Foundation
 
-/// A type describing the API endpoint of which a `NetworkTransport` will be
-/// communicating with when making network requests.
+/// A type describing the API endpoint that a `NetworkTransport` uses for
+/// making network requests.
 public protocol NetworkEndpoint: URLConvertible {
   typealias PathDescriptor = (method: HTTPMethod, path: String)
 
@@ -25,21 +25,24 @@ public protocol NetworkEndpoint: URLConvertible {
 }
 
 extension NetworkEndpoint {
-  /// The request method of this endpoint.
+  
+  /// Request method.
   public var method: HTTPMethod { pathDescriptor.method }
 
-  /// The path of this endpoint (excluding the host, i.e. `/users/get`).
+  /// Path of this endpoint (excluding the host, i.e. `/users/get`).
   public var path: String { pathDescriptor.path }
-
+  
+  /// Request timeout in seconds.
   public var timeout: TimeInterval { 60 }
-
+  
+  /// Request headers.
   public var headers: [String: String] {
     [
       "Accept": "application/json",
       "Content-Type": "application/json",
     ]
   }
-
+  
   public var parameters: [String: Any]? { nil }
 
   public func asURL() throws -> URL {
