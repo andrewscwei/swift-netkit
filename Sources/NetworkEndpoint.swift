@@ -3,7 +3,7 @@ import Foundation
 
 /// A type describing the API endpoint that a `NetworkTransport` uses for
 /// making network requests.
-public protocol NetworkEndpoint: URLConvertible {
+public protocol NetworkEndpoint: URLConvertible, CustomStringConvertible {
   typealias PathDescriptor = (method: HTTPMethod, path: String)
 
   /// A tuple containing the request method and path of the endpoint.
@@ -25,7 +25,7 @@ public protocol NetworkEndpoint: URLConvertible {
 }
 
 extension NetworkEndpoint {
-  
+
   /// Request method.
   public var method: HTTPMethod { pathDescriptor.method }
 
@@ -44,6 +44,8 @@ extension NetworkEndpoint {
   }
   
   public var parameters: [String: Any]? { nil }
+
+  public var description: String { "[\(method.rawValue.uppercased())] \(path)" }
 
   public func asURL() throws -> URL {
     guard

@@ -1,53 +1,54 @@
 import Alamofire
 import Foundation
 
-/// Types conforming to this protocol dictates certain behaviors of a
-/// `NetworkTransport` and intercepts its requests prior to placing them.
-public protocol NetworkTransportPolicy: Alamofire.RequestInterceptor {
-  
-  /// Replaces the host for the specified `URLRequest`. Provide a successful
-  /// `Result` of `nil` to leave the original host untouched.
-  func resolveHost(for urlRequest: URLRequest, completion: @escaping (Result<String?, Error>) -> Void)
+/// A type provided to `NetworkTransport` to preconfigure and/or intercept its
+/// requests.
+public protocol NetworkTransportPolicy: RequestInterceptor {
 
-  /// Modifies the headers for the specified `URLRequest`. Headers are added to
-  /// the current request.
-  func resolveHeaders(for urlRequest: URLRequest, completion: @escaping (Result<[String: String], Error>) -> Void)
+  /// Resolves and returns the host for the specified `URLRequest`.
+  ///
+  /// - Parameters:
+  ///   - urlRequest: The `URLRequest`.
+  ///
+  /// - Returns: The resolved host or `nil` if unavailable.
+  func resolveHost(for urlRequest: URLRequest) async throws -> String?
+
+  /// Resolves and returns the headers for the specified `URLRequest`.
+  ///
+  /// - Parameters:
+  ///   - urlRequest: The `URLRequest`.
+  ///
+  /// - Returns: The resolved headers.
+  func resolveHeaders(for urlRequest: URLRequest) async throws -> [String: String]
 
   /// Validates the response.
   ///
   /// - Parameters:
   ///   - response: The response.
-  ///
-  /// - Returns: A `Result` indicating whether validation was a success (with no
-  ///            value) or a failure (with the error).
-  func validate(response: HTTPURLResponse) -> Result<Void, Error>
+  func validate(response: HTTPURLResponse) throws
 
-  /// Intercepts and parses the response result, then returns the parsed result
-  /// to the client.
+  /// Parses the response and returns its data payload.
   ///
   /// - Parameters:
-  ///   - result: The `Result` from the network request initiated by the
-  ///             `NetworkTransport`.
-  ///   - statusCode: The status code associated with the `Result`.
-  func parseResult<T>(result: Result<T, Error>, statusCode: Int) -> Result<T, Error>
+  ///   - response: The response.
+  ///
+  /// - Returns: The response data.
+  func parseResponse<T>(_ response: DataResponse<T, some Error>) throws -> T
+
+
+  /// <#Description#>
+  /// - Parameter response: <#response description#>
+  /// - Returns: <#description#>
+  func parseResponse(_ response: DownloadResponse<URL, some Error>) throws -> URL
 }
 
 extension NetworkTransportPolicy {
-  public func resolveHost(for urlRequest: URLRequest, completion: @escaping (Result<String?, Error>) -> Void) {
-    completion(.success(nil))
-  }
-
-  public func resolveHeaders(for urlRequest: URLRequest, completion: @escaping (Result<[String: String], Error>) -> Void) {
-    completion(.success([:]))
-  }
-
   public func adapt(_ urlRequest: URLRequest, for session: Session, completion: @escaping (Result<URLRequest, Error>) -> Void) {
-    var urlRequest = urlRequest
+    Task {
+      do {
+        var urlRequest = urlRequest
+        let host = try await resolveHost(for: urlRequest)
 
-    resolveHost(for: urlRequest) { hostResult in
-      switch hostResult {
-      case .failure(let error): return completion(.failure(error))
-      case .success(let host):
         if
           let host = host,
           let url = urlRequest.url,
@@ -61,48 +62,67 @@ extension NetworkTransportPolicy {
           urlRequest.url = components.url
         }
 
-        resolveHeaders(for: urlRequest) { headersResult in
-          switch headersResult {
-          case .failure(let error): return completion(.failure(error))
-          case .success(let headers):
-            for (key, value) in headers {
-              urlRequest.setValue(value, forHTTPHeaderField: key)
-            }
+        let headers = try await resolveHeaders(for: urlRequest)
 
-            completion(.success(urlRequest))
-          }
+        for (key, value) in headers {
+          urlRequest.setValue(value, forHTTPHeaderField: key)
         }
+
+        completion(.success(urlRequest))
+      }
+      catch {
+        completion(.failure(error))
       }
     }
   }
 
-  public func validate(response: HTTPURLResponse) -> Result<Void, Error> {
+  public func resolveHost(for urlRequest: URLRequest) async throws -> String? { nil }
+
+  public func resolveHeaders(for urlRequest: URLRequest) async throws -> [String: String] { [:] }
+
+  public func validate(response: HTTPURLResponse) throws {
     let statusCode = response.statusCode
 
     switch statusCode {
-    case 401: return .failure(NetworkError.unauthorized(statusCode: statusCode))
-    case 429: return .failure(NetworkError.tooManyRequests(statusCode: statusCode))
-    default: return .success(())
+    case 401:
+      throw NetworkError.unauthorized(statusCode: statusCode)
+    case 429:
+      throw NetworkError.tooManyRequests(statusCode: statusCode)
+    default:
+      break
     }
   }
 
-  public func parseResult<T>(result: Result<T, Error>, statusCode: Int) -> Result<T, Error> {
-    switch result {
+  public func parseResponse<T>(_ response: DataResponse<T, some Error>) throws -> T {
+    guard let statusCode = response.response?.statusCode else { throw NetworkError.noResponse }
+
+    switch response.result {
     case .failure(let error):
-      return .failure(NetworkError.from(error))
-    case .success(let payload):
-      if let networkError = try? (payload as? NetworkErrorConvertible)?.asNetworkError(statusCode: statusCode) {
-        return .failure(networkError)
+      throw NetworkError.from(error)
+    case .success(let data):
+      if let networkError = try? (data as? NetworkErrorConvertible)?.asNetworkError(statusCode: statusCode) {
+        throw networkError
       }
 
       switch statusCode {
       case 400..<499:
-        return .failure(NetworkError.client(statusCode: statusCode))
+        throw NetworkError.client(statusCode: statusCode)
       case 500..<599:
-        return .failure(NetworkError.server(statusCode: statusCode))
+        throw NetworkError.server(statusCode: statusCode)
       default:
-        return .success(payload)
+        return data
       }
+    }
+  }
+
+  public func parseResponse(_ response: DownloadResponse<URL, some Error>) throws -> URL {
+    guard let _ = response.response?.statusCode else { throw NetworkError.noResponse }
+
+    switch response.result {
+    case .failure(let error):
+      throw NetworkError.from(error)
+    case .success(let fileURL):
+      return fileURL
     }
   }
 }
