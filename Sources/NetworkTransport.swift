@@ -1,7 +1,7 @@
 import Alamofire
 import Foundation
 
-/// An object delegated to making JSON network requests.
+/// An actor delegated to making JSON network requests.
 ///
 /// When parsing a response data of type `T`, if `T` conforms to
 /// `ErrorConvertible` and an error can be constructed from the data, expect a
@@ -12,23 +12,20 @@ import Foundation
 /// simplify this process, it is recommended to use an extension for
 /// `NetworkError` specific to the application to automatically extract the
 /// error message.
-public class NetworkTransport {
+public actor NetworkTransport {
 
   /// Default `NetworkTransportPolicy` to use when one is not provided.
   final class DefaultPolicy: NetworkTransportPolicy {}
 
-  /// Dispatch queue for thread-safe read and write of mutable members.
-  let lockQueue: DispatchQueue = .init(label: "NetKit.NetworkTransport", qos: .utility)
-
   /// The policy of this `NetworkTransport`.
-  var policy: NetworkTransportPolicy
+  let policy: NetworkTransportPolicy
 
   /// Map of active network requests accessible by their tags.
   var requestQueue: [String: Request] = [:]
 
   /// Creates a new `NetworkTransport` instance using the default
   /// `NetworkTransportPolicy`.
-  public convenience init() {
+  public init() {
     self.init(policy: DefaultPolicy())
   }
 
@@ -48,10 +45,9 @@ public class NetworkTransport {
   ///
   /// - Returns: The active request if there is a match.
   public func getActiveRequest(tag: String) -> Request? {
-    lockQueue.sync { () -> Request? in
-      guard let request = requestQueue[tag], !request.isCancelled, !request.isFinished, !request.isSuspended else { return nil }
-      return request
-    }
+    guard let request = requestQueue[tag], !request.isCancelled, !request.isFinished, !request.isSuspended else { return nil }
+
+    return request
   }
 
   /// Adds a request to the queue.
@@ -65,17 +61,17 @@ public class NetworkTransport {
   ///
   /// - Returns: Either the request that was added, or the existing request with
   ///            the specified tag name if `overwriteExisting` is `false`.
-  @discardableResult func addRequestToQueue(request: Request, tag: String, overwriteExisting: Bool = true) -> Request {
+  @discardableResult
+  func addRequestToQueue(request: Request, tag: String, overwriteExisting: Bool = true) -> Request {
     if !overwriteExisting, let existingRequest = getActiveRequest(tag: tag) {
       _log.debug("Adding request with tag <\(tag)> to queue... SKIP: A request already exists with that tag, returning the existing request instead")
       return existingRequest
     }
 
-    lockQueue.sync(flags: [.barrier]) {
-      requestQueue[tag]?.cancel()
-      requestQueue[tag] = request
-      _log.debug("Adding request with tag <\(tag)> to queue... OK: Queue = \(requestQueue.keys)")
-    }
+    requestQueue[tag]?.cancel()
+    requestQueue[tag] = request
+
+    _log.debug("Adding request with tag <\(tag)> to queue... OK: Queue = \(requestQueue.keys)")
 
     return request
   }
@@ -86,15 +82,14 @@ public class NetworkTransport {
   ///   - tag: The tag associated with the request.
   ///
   /// - Returns: The removed request.
-  @discardableResult func removeRequestFromQueue(tag: String) -> Request? {
+  @discardableResult
+  func removeRequestFromQueue(tag: String) -> Request? {
     guard let request = getActiveRequest(tag: tag) else { return nil }
     request.cancel()
 
-    lockQueue.sync(flags: [.barrier]) {
-      requestQueue.removeValue(forKey: tag)
+    requestQueue.removeValue(forKey: tag)
 
-      _log.debug("Removing request with tag <\(tag)>... OK: Queue = \(requestQueue.keys)")
-    }
+    _log.debug("Removing request with tag <\(tag)>... OK: Queue = \(requestQueue.keys)")
 
     return request
   }
@@ -110,13 +105,17 @@ public class NetworkTransport {
     _log.debug("Removing all requests from queue... OK: Queue = \(requestQueue.keys)")
   }
 
-  /// Generates a request tag from the given `NetworkEndpoint`.
-  ///
-  /// - Parameters:
-  ///   - endpoint: The `NetworkEndpoint`.
-  ///
-  /// - Returns: The generated tag.
-  func generateTagFromEndpoint(_ endpoint: NetworkEndpoint) -> String {
-    return "[\(endpoint.method.rawValue.uppercased())] \(endpoint)"
+  func generateTag(from aString: String) -> String {
+    var hash: UInt32 = 5381
+
+    for char in aString.utf8 {
+      hash = ((hash << 5) &+ hash) &+ UInt32(char)
+    }
+
+    let hexHash = String(format: "%08x", hash)
+
+    return String(hexHash.prefix(6))
   }
+
+  func generateTag(from endpoint: NetworkEndpoint) -> String { generateTag(from: endpoint.description) }
 }

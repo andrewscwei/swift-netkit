@@ -3,210 +3,131 @@ import Foundation
 import SwiftyJSON
 
 extension NetworkTransport {
-  
-  /// Sends an async multipart request to the `NetworkEndpoint` provided and
-  /// parses the response as a `Result` with a success value of codable type
-  /// `T`.
+
+  /// Sends a multipart request to a `NetworkEndpoint`, returning decodable data
+  /// of type `T` from the response.
+  ///
+  /// Custom response parsing can be provided by a `NetworkTransportPolicy`. If
+  /// `T` conforms to `ErrorConvertible` and the response data can be
+  /// constructed as an error, it will be automatically thrown.
   ///
   /// - Parameters:
   ///   - endpoint: The `NetworkEndpoint`.
-  ///   - queue: The dispatch queue used for placing the request.
-  ///   - tag: Custom tag for identifying this request. One will be generated
-  ///          automatically if unspecified.
-  ///   - overwriteExisting: Indicates if this request should overwrite an
-  ///                        existing request with the same tag. If so, the
-  ///                        existing request will be cancelled and this new
-  ///                        request will be placed. If `false` and an existing
-  ///                        request is active, a new request will not be placed
-  ///                        and the existing active request will be returned
-  ///                        immediately instead.
-  ///   - cancelQuietly: Indicates if this request should cancel quietly without
-  ///                    returning an error. If `false`, cancellations will be
-  ///                    treated as an error (`NetworkError.cancelled`).
-  ///   - completion: Handler invoked when the request completes and a response
-  ///                 is received. This handler transforms the raw response into
-  ///                 a `Result` with codable type `T` as its success value and
-  ///                 a `NetworkError` as its failure value. More fine-grained
-  ///                 parsing using the response status code is controlled by
-  ///                 the active `NetworkTransportPolicy`, via its member
-  ///                 `parseResponse(_:statusCode:)`.
+  ///   - tag: Custom identifier tag, auto-generated if unspecified.
+  ///   - replace: Indicates if this request should repalce an existing active
+  ///              request with the same tag by cancelling it.
   ///
-  /// - Returns: The `Request` object.
-  @discardableResult public func upload<T: Decodable>(
-    _ endpoint: NetworkEndpoint,
-    queue: DispatchQueue = .global(qos: .utility),
-    tag: String? = nil,
-    overwriteExisting: Bool = true,
-    cancelQuietly: Bool = true,
-    completion: @escaping (Result<T, Error>) -> Void = { _ in }
-  ) -> Request {
-    let tag = tag ?? generateTagFromEndpoint(endpoint)
+  /// - Returns: The decoded response data.
+  @discardableResult
+  public func upload<T: Decodable>(_ endpoint: NetworkEndpoint, tag: String? = nil, replace: Bool = true) async throws -> T {
+    let tag = tag ?? generateTag(from: endpoint)
+    let request = createRequest(endpoint, tag: tag, replace: replace)
 
-    if !overwriteExisting, let existingRequest = getActiveRequest(tag: tag) { return existingRequest }
+    _log.debug("<\(tag)> Uploading to \(endpoint)...")
 
-    removeRequestFromQueue(tag: tag)
+    let response = await request
+      .serializingDecodable(T.self)
+      .response
 
-    _log.debug("Sending multipart \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"...")
+    let statusCode = response.response?.statusCode
 
-    let request = AF.upload(
-      multipartFormData: { formData in
-        do {
-          try self.appendToMultipartFormData(formData, parameters: endpoint.parameters ?? [:])
-        }
-        catch {
-          return completion(.failure(NetworkError.encoding(cause: error)))
-        }
-      },
-      to: endpoint,
-      method: endpoint.method,
-      headers: .init(endpoint.headers),
-      interceptor: policy
-    ) { urlRequest in
-      urlRequest.timeoutInterval = endpoint.timeout
+    do {
+      let data = try policy.parseResponse(response)
+
+      _log.debug("<\(tag)> Uploading to \"\(endpoint)\"... [\(statusCode ?? 0)] OK: \(data)")
+
+      return data
     }
-      .validate({ urlRequest, response, data in self.policy.validate(response: response) })
-      .responseDecodable(of: T.self, queue: queue) { [weak self] in
-        guard let weakSelf = self else { return }
-
-        let response = weakSelf.parseResponse($0, for: endpoint, tag: tag)
-
-        if
-          cancelQuietly,
-          case .failure(let error) = response,
-          let networkError = error as? NetworkError,
-          case .cancelled = networkError
-        {
-          _log.debug("Sending multipart \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... SKIP: Cancelled quietly")
-          return
-        }
-
-        completion(response)
-      }
-
-    return addRequestToQueue(request: request, tag: tag)
-  }
-
-  /// Sends an async multipart request to the `NetworkEndpoint` provided and
-  /// parses the response as a `Result` with no success value (i.e. when the
-  /// payload is discardable or when the status code is expected to be `204`).
-  ///
-  /// - Parameters:
-  ///   - endpoint: The `NetworkEndpoint`.
-  ///   - queue: The dispatch queue used for placing the request.
-  ///   - tag: Custom tag for identifying this request. One will be generated
-  ///          automatically if unspecified.
-  ///   - overwriteExisting: Indicates if this request should overwrite an
-  ///                        existing request with the same tag. If so, the
-  ///                        existing request will be cancelled and this new
-  ///                        request will be placed. If `false` and an existing
-  ///                        request is active, a new request will not be placed
-  ///                        and the existing active request will be returned
-  ///                        immediately instead.
-  ///   - cancelQuietly: Indicates if this request should cancel quietly without
-  ///                    returning an error. If `false`, cancellations will be
-  ///                    treated as an error (`NetworkError.cancelled`).
-  ///   - completion: Handler invoked when the request completes and a response
-  ///                 is received. This handler transforms the raw response into
-  ///                 a `Result` with void as its success value and a
-  ///                 `NetworkError` as its failure value. More fine-grained
-  ///                 parsing using the response status code is controlled by
-  ///                 the active `NetworkTransportPolicy`, via its member
-  ///                 `parseResponse(_:statusCode:)`.
-  ///
-  /// - Returns: The `Request` object.
-  @discardableResult public func upload(
-    _ endpoint: NetworkEndpoint,
-    queue: DispatchQueue = .global(qos: .utility),
-    tag: String? = nil,
-    overwriteExisting: Bool = true,
-    cancelQuietly: Bool = true,
-    completion: @escaping (Result<Void, Error>) -> Void = { _ in }
-  ) -> Request {
-    let tag = tag ?? generateTagFromEndpoint(endpoint)
-
-    if !overwriteExisting, let existingRequest = getActiveRequest(tag: tag) { return existingRequest }
-
-    removeRequestFromQueue(tag: tag)
-
-    _log.debug("Sending multipart \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"...")
-
-    let request = AF.upload(
-      multipartFormData: { formData in
-        do {
-          try self.appendToMultipartFormData(formData, parameters: endpoint.parameters ?? [:])
-        }
-        catch {
-          return completion(.failure(NetworkError.encoding(cause: error)))
-        }
-      },
-      to: endpoint,
-      method: endpoint.method,
-      headers: .init(endpoint.headers),
-      interceptor: policy
-    ) { urlRequest in
-      urlRequest.timeoutInterval = endpoint.timeout
-    }
-      .validate({ urlRequest, response, data in self.policy.validate(response: response) })
-      .response(queue: queue) { [weak self] in
-        guard let weakSelf = self else { return }
-
-        let response = weakSelf.parseResponse($0, for: endpoint, tag: tag).map { _ in }
-
-        if
-          cancelQuietly,
-          case .failure(let error) = response,
-          let networkError = error as? NetworkError,
-          case .cancelled = networkError
-        {
-          _log.debug("Sending multipart \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... SKIP: Cancelled quietly")
-          return
-        }
-
-        completion(response)
-      }
-
-    return addRequestToQueue(request: request, tag: tag)
-  }
-
-  /// Parses the response returned by an endpoint request into a `Result`.
-  ///
-  /// - Parameters:
-  ///   - response: The response.
-  ///   - endpoint: The endpoint.
-  ///   - tag: The tag associated with the request.
-  ///
-  /// - Returns: The parsed result.
-  private func parseResponse<T>(_ response: DataResponse<T, AFError>, for endpoint: NetworkEndpoint, tag: String) -> Result<T, Error> {
-    switch response.result {
-    case .failure(let error):
-      let statusCode = response.response?.statusCode
-
-      if let statusCode = statusCode {
-        _log.error("Sending multipart \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... ERR: [\(statusCode)] \(error)")
-
-        if let data = response.data, let json = try? JSONSerialization.jsonObject(with: data) {
-          _log.error("Raw payload = \(json)")
-        }
-
-        return policy.parseResult(result: .failure(error), statusCode: statusCode)
+    catch {
+      if let error = error as? NetworkError, case .cancelled = error {
+        _log.debug("<\(tag)> Uploading to \"\(endpoint)\"... [\(statusCode ?? 0)] CANCEL: \(error)")
       }
       else {
-        _log.error("Sending multipart \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... ERR: \(error)")
+        _log.error("<\(tag)> Uploading to \"\(endpoint)\"... [\(statusCode ?? 0)] ERR: \(error)")
 
         if let data = response.data, let json = try? JSONSerialization.jsonObject(with: data) {
           _log.error("Raw payload = \(json)")
         }
-
-        return .failure(NetworkError.from(error))
-      }
-    case .success(let data):
-      guard let statusCode = response.response?.statusCode else {
-        _log.error("Sending multipart \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... ERR: No status code")
-        return .failure(NetworkError.noResponse())
       }
 
-      _log.debug("Sending multipart \(endpoint.method.rawValue.uppercased()) request with tag <\(tag)> to endpoint \"\(endpoint)\"... OK: [\(statusCode)] \(data)")
-      return policy.parseResult(result: .success(data), statusCode: statusCode)
+      throw error
+    }
+  }
+
+  /// Sends a multipart request to a `NetworkEndpoint`, ignoring any response
+  /// data.
+  ///
+  /// Custom response parsing can be provided by a `NetworkTransportPolicy`. If
+  /// `T` conforms to `ErrorConvertible` and the response data can be
+  /// constructed as an error, it will be automatically thrown.
+  ///
+  /// - Parameters:
+  ///   - endpoint: The `NetworkEndpoint`.
+  ///   - tag: Custom identifier tag, auto-generated if unspecified.
+  ///   - replace: Indicates if this request should repalce an existing active
+  ///              request with the same tag by cancelling it.
+  public func upload(_ endpoint: NetworkEndpoint, tag: String? = nil, replace: Bool = true) async throws {
+    let tag = tag ?? generateTag(from: endpoint)
+    let request = createRequest(endpoint, tag: tag, replace: replace)
+
+    _log.debug("<\(tag)> Uploading to \(endpoint)...")
+
+    let response = await request
+      .serializingData()
+      .response
+
+    let statusCode = response.response?.statusCode
+
+    do {
+      let _ = try policy.parseResponse(response)
+
+      _log.debug("<\(tag)> Uploading to \"\(endpoint)\"... [\(statusCode ?? 0)] OK")
+    }
+    catch {
+      if let error = error as? NetworkError, case .cancelled = error {
+        _log.debug("<\(tag)> Uploading to \"\(endpoint)\"... [\(statusCode ?? 0)] CANCEL: \(error)")
+      }
+      else {
+        _log.error("<\(tag)> Uploading to \"\(endpoint)\"... [\(statusCode ?? 0)] ERR: \(error)")
+
+        if let data = response.data, let json = try? JSONSerialization.jsonObject(with: data) {
+          _log.error("Raw payload = \(json)")
+        }
+      }
+
+      throw error
+    }
+  }
+
+  private func createRequest(_ endpoint: NetworkEndpoint, tag: String, replace: Bool) -> UploadRequest {
+    if !replace, let request = getActiveRequest(tag: tag) as? UploadRequest {
+      return request
+    }
+    else {
+      removeRequestFromQueue(tag: tag)
+
+      let request = AF.upload(
+        multipartFormData: { try? self.appendToMultipartFormData($0, parameters: endpoint.parameters ?? [:]) },
+        to: endpoint,
+        method: endpoint.method,
+        headers: .init(endpoint.headers),
+        interceptor: policy,
+        requestModifier: { $0.timeoutInterval = endpoint.timeout }
+      )
+        .validate { urlRequest, response, data in
+          do {
+            try self.policy.validate(response: response)
+
+            return .success(())
+          }
+          catch {
+            return .failure(error)
+          }
+        }
+
+      addRequestToQueue(request: request, tag: tag)
+
+      return request
     }
   }
 
@@ -219,8 +140,7 @@ extension NetworkTransport {
   ///   - parameters: The parameters to append to the multipart form data.
   ///
   /// - Throws:
-  ///   - `NetworkError.encodingParameters`: when unable to encode one or more
-  ///     parameters.
+  ///   - `NetworkError.encoding`: when unable to encode one or more parameters.
   private func appendToMultipartFormData(_ formData: MultipartFormData, parameters: Parameters) throws {
     for (key, value) in parameters {
       if let data = value as? Data {

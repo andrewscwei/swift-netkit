@@ -2,7 +2,6 @@ import XCTest
 @testable import NetKit
 
 class NetworkTransportUploadTests: XCTestCase {
-
   enum MockEndpoint: NetworkEndpoint {
     case post([String: Sendable])
     case statusCode(code: Int)
@@ -40,8 +39,8 @@ class NetworkTransportUploadTests: XCTestCase {
     let networkTransport = NetworkTransport()
     let params = Params(foo: "foo", bar: "bar")
 
-    networkTransport.upload(MockEndpoint.post(["foo": "foo", "bar": "bar", "file": Data("Hello, World!".utf8)])) { (result: Result<Payload, Error>) in
-      guard let data = try? result.get() else { return XCTFail() }
+    Task {
+      let data: Payload = try await networkTransport.upload(MockEndpoint.post(["foo": "foo", "bar": "bar", "file": Data("Hello, World!".utf8)]))
       XCTAssertTrue(data.form?.foo == params.foo)
       XCTAssertTrue(data.form?.bar == params.bar)
       XCTAssertTrue(data.files?["file"] == "Hello, World!")
@@ -63,56 +62,72 @@ class NetworkTransportUploadTests: XCTestCase {
 
     let networkTransport = NetworkTransport()
 
-    networkTransport.upload(MockEndpoint.statusCode(code: 200)) { (result: Result<Void, Error>) in
-      XCTAssertNoThrow(result.get)
+    Task {
+      try await networkTransport.upload(MockEndpoint.statusCode(code: 200))
       expectation200.fulfill()
     }
 
-    networkTransport.upload(MockEndpoint.statusCode(code: 204)) { (result: Result<Void, Error>) in
-      XCTAssertNoThrow(result.get)
+    Task {
+      try await networkTransport.upload(MockEndpoint.statusCode(code: 204))
       expectation204.fulfill()
     }
 
-    networkTransport.upload(MockEndpoint.statusCode(code: 400)) { (result: Result<Void, Error>) in
-      switch result {
-      case .success: return XCTFail()
-      case .failure(let error):
+    Task {
+      do {
+        try await networkTransport.upload(MockEndpoint.statusCode(code: 400))
+        XCTFail()
+      }
+      catch {
         switch error {
-        case NetworkError.client: expectation400.fulfill()
-        default: return XCTFail()
+        case NetworkError.client:
+          expectation400.fulfill()
+        default:
+          XCTFail()
         }
       }
     }
 
-    networkTransport.upload(MockEndpoint.statusCode(code: 401)) { (result: Result<Void, Error>) in
-      switch result {
-      case .success: return XCTFail()
-      case .failure(let error):
+    Task {
+      do {
+        try await networkTransport.upload(MockEndpoint.statusCode(code: 401))
+        XCTFail()
+      }
+      catch {
         switch error {
-        case NetworkError.unauthorized: expectation401.fulfill()
-        default: return XCTFail()
+        case NetworkError.unauthorized:
+          expectation401.fulfill()
+        default:
+          XCTFail()
         }
       }
     }
 
-    networkTransport.upload(MockEndpoint.statusCode(code: 429)) { (result: Result<Void, Error>) in
-      switch result {
-      case .success: return XCTFail()
-      case .failure(let error):
+    Task {
+      do {
+        try await networkTransport.upload(MockEndpoint.statusCode(code: 429))
+        XCTFail()
+      }
+      catch {
         switch error {
-        case NetworkError.tooManyRequests: expectation429.fulfill()
-        default: return XCTFail()
+        case NetworkError.tooManyRequests:
+          expectation429.fulfill()
+        default:
+          XCTFail()
         }
       }
     }
 
-    networkTransport.upload(MockEndpoint.statusCode(code: 500)) { (result: Result<Void, Error>) in
-      switch result {
-      case .success: return XCTFail()
-      case .failure(let error):
+    Task {
+      do {
+        try await networkTransport.upload(MockEndpoint.statusCode(code: 500))
+        XCTFail()
+      }
+      catch {
         switch error {
-        case NetworkError.server: expectation500.fulfill()
-        default: return XCTFail()
+        case NetworkError.server:
+          expectation500.fulfill()
+        default:
+          XCTFail()
         }
       }
     }
