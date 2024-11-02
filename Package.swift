@@ -14,11 +14,15 @@ let package = Package(
     .macOS(.v12),
     .iOS(.v15),
     .tvOS(.v15),
-    .watchOS(.v8)],
+    .watchOS(.v8),
+  ],
   products: [
     .library(
       name: "NetKit",
-      targets: ["NetKit"]),
+      targets: [
+        "NetKit",
+      ]
+    ),
   ],
   dependencies: [
     .package(url: "https://github.com/Alamofire/Alamofire.git", .upToNextMajor(from: "5.0.0")),
@@ -27,11 +31,18 @@ let package = Package(
   targets: [
     .target(
       name: "NetKit",
-      dependencies: ["Alamofire", "SwiftyJSON"],
-      path: "Sources"),
+      dependencies: [
+        "Alamofire",
+        "SwiftyJSON",
+      ],
+      path: "Sources"
+    ),
     .testTarget(
       name: "NetKitTests",
-      dependencies: ["NetKit"],
-      path: "Tests"),
+      dependencies: [
+        "NetKit",
+      ],
+      path: "Tests"
+    ),
   ]
 )

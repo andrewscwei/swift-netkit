@@ -13,7 +13,7 @@ platform :ios do
       destination: 'platform=iOS Simulator,OS=18.0,name=iPhone 16 Pro',
       scheme: "NetKit",
       code_coverage: true,
-      result_bundle: true
+      result_bundle: true,
     )
   end
 end
