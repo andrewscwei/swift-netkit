@@ -1,7 +1,6 @@
 import Foundation
 
 extension Data {
-
   var mimeType: String {
     get {
       var c = UInt8()

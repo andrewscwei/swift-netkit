@@ -17,10 +17,6 @@ public class NetworkTransport {
   /// Default `NetworkTransportPolicy` to use when one is not provided.
   final class DefaultPolicy: NetworkTransportPolicy {}
 
-  /// Specifies the log mode that governs how `NetworkTransport` outputs logs
-  /// (if any).
-  public var logMode: LogMode = .none
-
   /// Dispatch queue for thread-safe read and write of mutable members.
   let lockQueue: DispatchQueue = .init(label: "NetKit.NetworkTransport", qos: .utility)
 
@@ -71,14 +67,14 @@ public class NetworkTransport {
   ///            the specified tag name if `overwriteExisting` is `false`.
   @discardableResult func addRequestToQueue(request: Request, tag: String, overwriteExisting: Bool = true) -> Request {
     if !overwriteExisting, let existingRequest = getActiveRequest(tag: tag) {
-      log(.default, mode: logMode) { "Adding request with tag <\(tag)> to queue... SKIP: A request already exists with that tag, returning the existing request instead" }
+      _log.debug("Adding request with tag <\(tag)> to queue... SKIP: A request already exists with that tag, returning the existing request instead")
       return existingRequest
     }
 
     lockQueue.sync(flags: [.barrier]) {
       requestQueue[tag]?.cancel()
       requestQueue[tag] = request
-      log(.default, mode: logMode) { "Adding request with tag <\(tag)> to queue... OK: Queue = \(requestQueue.keys)" }
+      _log.debug("Adding request with tag <\(tag)> to queue... OK: Queue = \(requestQueue.keys)")
     }
 
     return request
@@ -96,7 +92,8 @@ public class NetworkTransport {
 
     lockQueue.sync(flags: [.barrier]) {
       requestQueue.removeValue(forKey: tag)
-      log(.default, mode: logMode) { "Removing request with tag <\(tag)>... OK: Queue = \(requestQueue.keys)" }
+
+      _log.debug("Removing request with tag <\(tag)>... OK: Queue = \(requestQueue.keys)")
     }
 
     return request
@@ -110,7 +107,7 @@ public class NetworkTransport {
 
     requestQueue = [:]
 
-    log(.debug, mode: logMode) { "Removing all requests from queue... OK: Queue = \(requestQueue.keys)" }
+    _log.debug("Removing all requests from queue... OK: Queue = \(requestQueue.keys)")
   }
 
   /// Generates a request tag from the given `NetworkEndpoint`.
