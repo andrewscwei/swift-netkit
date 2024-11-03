@@ -8,7 +8,7 @@ class NetworkTransportDownloadTests: XCTestCase {
 
     var pathDescriptor: PathDescriptor {
       switch self {
-      case .image: return (.get, "/image")
+      case .image: return (.get, "/image/webp")
       }
     }
 
@@ -16,8 +16,8 @@ class NetworkTransportDownloadTests: XCTestCase {
   }
 
   func testImageDownload() {
-    let expectation = XCTestExpectation(description: "[GET] should download image with response status code 200")
     let networkTransport = NetworkTransport()
+    let expectation = XCTestExpectation()
 
     Task {
       try await networkTransport.download(from: MockEndpoint.image, to: FileManager.default.temporaryDirectory)

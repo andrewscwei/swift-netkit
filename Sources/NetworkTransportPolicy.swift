@@ -25,29 +25,6 @@ public protocol NetworkTransportPolicy: RequestInterceptor {
   ///
   /// - Parameters:
   ///   - response: The response.
-  func validate(response: HTTPURLResponse) throws
-
-  /// Parses a `DataResponse` and returns its data payload.
-  ///
-  /// - Parameters:
-  ///   - response: The `DataResponse`.
-  func parseResponse(_ response: DataResponse<Empty, some Error>) throws
-
-  /// Parses a `DataResponse` and returns its data payload.
-  ///
-  /// - Parameters:
-  ///   - response: The `DataResponse`.
-  ///
-  /// - Returns: The response data.
-  func parseResponse<T>(_ response: DataResponse<T, some Error>) throws -> T
-  
-
-  /// Parses a `DownloadResponse` and returns the file URL.
-  ///
-  /// - Parameter response: The `DownloadResponse`.
-  ///
-  /// - Returns: The file URL.
-  func parseResponse(_ response: DownloadResponse<URL, some Error>) throws -> URL
 }
 
 extension NetworkTransportPolicy {
@@ -88,20 +65,7 @@ extension NetworkTransportPolicy {
 
   public func resolveHeaders(for urlRequest: URLRequest) async throws -> [String: String] { [:] }
 
-  public func validate(response: HTTPURLResponse) throws {
-    let statusCode = response.statusCode
-
-    switch statusCode {
-    case 401:
-      throw NetworkError.unauthorized(statusCode: statusCode)
-    case 429:
-      throw NetworkError.tooManyRequests(statusCode: statusCode)
-    default:
-      break
-    }
-  }
-
-  public func parseResponse(_ response: DataResponse<Empty, some Error>) throws {
+  func parseResponse(_ response: DataResponse<Empty, some Error>) throws {
     switch response.result {
     case .failure(let error):
       if let error = error as? AFError, case .responseSerializationFailed(let reason) = error, case .inputDataNilOrZeroLength = reason {
@@ -111,49 +75,53 @@ extension NetworkTransportPolicy {
         throw NetworkError.from(error)
       }
     case .success:
-      guard let statusCode = response.response?.statusCode else { throw NetworkError.noResponse }
-
-      switch statusCode {
-      case 400..<499:
-        throw NetworkError.client(statusCode: statusCode)
-      case 500..<599:
-        throw NetworkError.server(statusCode: statusCode)
-      default:
-        break
-      }
+      let statusCode = response.response?.statusCode
+      try validateStatusCode(statusCode)
     }
   }
 
-  public func parseResponse<T>(_ response: DataResponse<T, some Error>) throws -> T {
+  func parseResponse<T>(_ response: DataResponse<T, some Error>) throws -> T {
     switch response.result {
     case .failure(let error):
       throw NetworkError.from(error)
     case .success(let data):
-      guard let statusCode = response.response?.statusCode else { throw NetworkError.noResponse }
+      let statusCode = response.response?.statusCode
+      try validateStatusCode(statusCode)
 
       if let networkError = try? (data as? NetworkErrorConvertible)?.asNetworkError(statusCode: statusCode) {
         throw networkError
       }
 
-      switch statusCode {
-      case 400..<499:
-        throw NetworkError.client(statusCode: statusCode)
-      case 500..<599:
-        throw NetworkError.server(statusCode: statusCode)
-      default:
-        return data
-      }
+      return data
     }
   }
 
-  public func parseResponse(_ response: DownloadResponse<URL, some Error>) throws -> URL {
-    guard let _ = response.response?.statusCode else { throw NetworkError.noResponse }
-
+  func parseResponse(_ response: DownloadResponse<URL, some Error>) throws -> URL {
     switch response.result {
     case .failure(let error):
       throw NetworkError.from(error)
     case .success(let fileURL):
+      let statusCode = response.response?.statusCode
+      try validateStatusCode(statusCode)
+
       return fileURL
+    }
+  }
+
+  private func validateStatusCode(_ statusCode: Int?) throws {
+    guard let statusCode = statusCode else { throw NetworkError.noResponse }
+
+    switch statusCode {
+    case 401:
+      throw NetworkError.unauthorized(statusCode: statusCode)
+    case 429:
+      throw NetworkError.tooManyRequests(statusCode: statusCode)
+    case 400..<499:
+      throw NetworkError.client(statusCode: statusCode)
+    case 500..<599:
+      throw NetworkError.server(statusCode: statusCode)
+    default:
+      break
     }
   }
 }

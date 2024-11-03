@@ -5,7 +5,7 @@ import Foundation
 /// operations. By default, errors lack descriptions. Applications should
 /// extend this enum to conform to `LocalizedError` for localized descriptions.
 public enum NetworkError: Error {
-  
+
   /// A type of network error thrown when a request is cancelled.
   case cancelled(code: String? = nil, cause: Error? = nil)
 
@@ -164,10 +164,14 @@ extension NetworkError {
     let errorCode = "\(urlError.errorCode)"
 
     switch urlError.code {
-    case .cancelled: return .cancelled(code: errorCode, cause: urlError)
-    case .notConnectedToInternet: return .noNetwork(code: errorCode, cause: urlError)
-    case .timedOut: return .timeout(code: errorCode, cause: urlError)
-    default: return .unknown(code: errorCode, cause: urlError)
+    case .cancelled:
+      return .cancelled(code: errorCode, cause: urlError)
+    case .notConnectedToInternet:
+      return .noNetwork(code: errorCode, cause: urlError)
+    case .timedOut:
+      return .timeout(code: errorCode, cause: urlError)
+    default:
+      return .unknown(code: errorCode, cause: urlError)
     }
   }
 
@@ -183,13 +187,19 @@ extension NetworkError {
     switch afError {
     case .responseValidationFailed(let reason):
       switch reason {
-      case .customValidationFailed(let cause): return from(cause)
-      default: return .client(statusCode: statusCode, cause: afError)
+      case .customValidationFailed(let cause):
+        return from(cause)
+      default:
+        return .client(statusCode: statusCode, cause: afError)
       }
-    case .explicitlyCancelled: return .cancelled(cause: afError)
-    case .sessionTaskFailed(let error): return from(error)
-    case .responseSerializationFailed: return .decoding(statusCode: statusCode, cause: afError)
-    default: return .unknown(statusCode: statusCode, cause: afError)
+    case .explicitlyCancelled:
+      return .cancelled(cause: afError)
+    case .sessionTaskFailed(let error):
+      return from(error)
+    case .responseSerializationFailed:
+      return .decoding(statusCode: statusCode, cause: afError)
+    default:
+      return .unknown(statusCode: statusCode, cause: afError)
     }
   }
 
