@@ -6,7 +6,7 @@ platform :ios do
     setup_ci if ENV['CI']
   end
 
-  desc "Run tests"
+  desc "Test"
   lane :test do
     scan(
       package_path: './',
