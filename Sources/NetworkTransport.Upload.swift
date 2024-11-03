@@ -21,14 +21,11 @@ extension NetworkTransport {
   @discardableResult
   public func upload<T: Decodable>(_ endpoint: NetworkEndpoint, tag: String? = nil, replace: Bool = true) async throws -> T {
     let tag = tag ?? generateTag(from: endpoint)
-    let request = createRequest(endpoint, tag: tag, replace: replace)
 
     _log.debug("<\(tag)> Uploading to \(endpoint)...")
 
-    let response = await request
-      .serializingDecodable(T.self)
-      .response
-
+    let request = createRequest(endpoint, tag: tag, replace: replace)
+    let response = await request.serializingDecodable(T.self).response
     let statusCode = response.response?.statusCode
 
     do {
@@ -68,18 +65,15 @@ extension NetworkTransport {
   ///              request with the same tag by cancelling it.
   public func upload(_ endpoint: NetworkEndpoint, tag: String? = nil, replace: Bool = true) async throws {
     let tag = tag ?? generateTag(from: endpoint)
-    let request = createRequest(endpoint, tag: tag, replace: replace)
 
     _log.debug("<\(tag)> Uploading to \(endpoint)...")
 
-    let response = await request
-      .serializingData()
-      .response
-
+    let request = createRequest(endpoint, tag: tag, replace: replace)
+    let response = await request.serializingDecodable(Empty.self).response
     let statusCode = response.response?.statusCode
 
     do {
-      let _ = try policy.parseResponse(response)
+      try policy.parseResponse(response)
 
       _log.debug("<\(tag)> Uploading to \"\(endpoint)\"... [\(statusCode ?? 0)] OK")
     }
