@@ -8,12 +8,6 @@ import Glibc
 import Darwin.C
 #endif
 
-#if canImport(XCTest)
-let isRunningTests = true
-#else
-let isRunningTests = false
-#endif
-
 let package = Package(
   name: "NetKit",
   platforms: [
@@ -41,12 +35,7 @@ let package = Package(
         "Alamofire",
         "SwiftyJSON",
       ],
-      path: "Sources",
-      swiftSettings: isRunningTests ? [
-        .define("NETKIT_DEBUG"),
-      ] : [
-
-      ]
+      path: "Sources"
     ),
     .testTarget(
       name: "NetKitTests",
