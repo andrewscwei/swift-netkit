@@ -18,7 +18,7 @@ extension NetworkTransport {
   ///
   /// - Returns: The decoded response data.
   @discardableResult
-  public func request<T: Decodable>(_ endpoint: NetworkEndpoint, tag: String? = nil, replace: Bool = true) async throws -> T {
+  public func request<T: Decodable & Sendable>(_ endpoint: NetworkEndpoint, tag: String? = nil, replace: Bool = true) async throws -> T {
     let tag = tag ?? generateTag(from: endpoint)
 
     _log.debug("<\(tag)> Requesting \(endpoint)...")
@@ -113,6 +113,7 @@ extension NetworkTransport {
 
   private func getSanitizedParameters(for endpoint: NetworkEndpoint) -> Parameters? {
     guard let parameters = endpoint.parameters, !parameters.isEmpty else { return nil }
+
     return parameters
   }
 

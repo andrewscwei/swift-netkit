@@ -18,7 +18,7 @@ public protocol NetworkEndpoint: URLConvertible, CustomStringConvertible {
   /// The parameters of this endpoint. Depending on the request method, these
   /// parameters will either be encoded into the URL as query strings or the
   /// request body as JSON/multipart form parameters.
-  var parameters: [String: Any]? { get }
+  var parameters: [String: any Sendable]? { get }
 
   /// The host URL of the endpoint, (i.e. `https://www.example.com`).
   static var host: String { get }
