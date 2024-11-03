@@ -37,7 +37,7 @@ class NetworkTransportRequestTests: XCTestCase {
       }
     }
 
-    var parameters: [String: Any]? {
+    var parameters: [String: any Sendable]? {
       switch self {
       case
         let .get(params),

@@ -4,7 +4,6 @@ import Foundation
 /// A type provided to `NetworkTransport` to preconfigure and/or intercept its
 /// requests.
 public protocol NetworkTransportPolicy: RequestInterceptor {
-
   /// Resolves and returns the host for the specified `URLRequest`.
   ///
   /// - Parameters:
@@ -20,11 +19,6 @@ public protocol NetworkTransportPolicy: RequestInterceptor {
   ///
   /// - Returns: The resolved headers.
   func resolveHeaders(for urlRequest: URLRequest) async throws -> [String: String]
-
-  /// Validates the response.
-  ///
-  /// - Parameters:
-  ///   - response: The response.
 }
 
 extension NetworkTransportPolicy {
@@ -108,7 +102,7 @@ extension NetworkTransportPolicy {
     }
   }
 
-  private func validateStatusCode(_ statusCode: Int?) throws {
+  func validateStatusCode(_ statusCode: Int?) throws {
     guard let statusCode = statusCode else { throw NetworkError.noResponse }
 
     switch statusCode {
