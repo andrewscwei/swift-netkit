@@ -75,7 +75,12 @@ extension NetworkTransport {
         return (fileURL, [.removePreviousFile, .createIntermediateDirectories])
       }
 
-      let request = AF.download(url, interceptor: policy, to: destination)
+      let request = AF.download(
+        url,
+        interceptor: policy,
+        to: destination
+      )
+        .validate { _, _, _ in .success(()) }
 
       addRequestToQueue(request: request, tag: tag)
 

@@ -3,39 +3,6 @@ import XCTest
 
 class NetworkTransportRequestTests: XCTestCase {
   enum MockEndpoint: NetworkEndpoint {
-    case get([String: Sendable])
-    case delete([String: Sendable])
-    case post([String: Sendable])
-    case put([String: Sendable])
-    case patch([String: Sendable])
-    case statusCode(code: Int)
-
-    var pathDescriptor: PathDescriptor {
-      switch self {
-      case .get: return (.get, "/get")
-      case .delete: return (.delete, "/delete")
-      case .post: return (.post, "/post")
-      case .put: return (.put, "/put")
-      case .patch: return (.patch, "/patch")
-      case .statusCode(let code): return (.get, "/status/\(code)")
-      }
-    }
-
-    var parameters: [String: Any]? {
-      switch self {
-      case let .get(params): return params
-      case let .delete(params): return params
-      case let .post(params): return params
-      case let .put(params): return params
-      case let .patch(params): return params
-      default: return nil
-      }
-    }
-
-    static var host: String { "https://httpbin.org" }
-  }
-
-  func testDecodableResponse() {
     struct Params: Codable {
       let foo: String?
       let bar: String?
@@ -46,78 +13,148 @@ class NetworkTransportRequestTests: XCTestCase {
       let json: Params?
     }
 
-    let expectationGet = XCTestExpectation(description: "[GET] Should get response status code 200")
-    let expectationDelete = XCTestExpectation(description: "[DELETE] should get response status code 200")
-    let expectationPost = XCTestExpectation(description: "[POST] should get response status code 200")
-    let expectationPut = XCTestExpectation(description: "[PUT] should get response status code 200")
-    let expectationPatch = XCTestExpectation(description: "[PATCH] should get response status code 200")
+    case get(params: [String: Sendable]? = nil)
+    case delete(params: [String: Sendable]? = nil)
+    case post(params: [String: Sendable]? = nil)
+    case put(params: [String: Sendable]? = nil)
+    case patch(params: [String: Sendable]? = nil)
+    case statusCode(code: Int, params: [String: Sendable]? = nil)
 
-    let networkTransport = NetworkTransport()
-    let params = Params(foo: "foo", bar: "bar")
-
-    Task {
-      let data: Payload = try await networkTransport.request(MockEndpoint.get(["foo": "foo", "bar": "bar"]))
-      XCTAssertTrue(data.args?.foo == params.foo)
-      XCTAssertTrue(data.args?.bar == params.bar)
-      expectationGet.fulfill()
+    var pathDescriptor: PathDescriptor {
+      switch self {
+      case .get:
+        return (.get, "/get")
+      case .delete:
+        return (.delete, "/delete")
+      case .post:
+        return (.post, "/post")
+      case .put:
+        return (.put, "/put")
+      case .patch:
+        return (.patch, "/patch")
+      case .statusCode(let code, _):
+        return (.get, "/status/\(code)")
+      }
     }
 
-    Task {
-      let data: Payload = try await networkTransport.request(MockEndpoint.delete(["foo": "foo", "bar": "bar"]))
-      XCTAssertTrue(data.args?.foo == params.foo)
-      XCTAssertTrue(data.args?.bar == params.bar)
-      expectationDelete.fulfill()
+    var parameters: [String: Any]? {
+      switch self {
+      case
+        let .get(params),
+        let .delete(params),
+        let .post(params),
+        let .put(params),
+        let .patch(params),
+        let .statusCode(_, params):
+          return params
+      }
     }
 
-    Task {
-      let data: Payload = try await networkTransport.request(MockEndpoint.post(["foo": "foo", "bar": "bar"]))
-      XCTAssertTrue(data.json?.foo == params.foo)
-      XCTAssertTrue(data.json?.bar == params.bar)
-      expectationPost.fulfill()
-    }
-
-    Task {
-      let data: Payload = try await networkTransport.request(MockEndpoint.put(["foo": "foo", "bar": "bar"]))
-      XCTAssertTrue(data.json?.foo == params.foo)
-      XCTAssertTrue(data.json?.bar == params.bar)
-      expectationPut.fulfill()
-    }
-
-    Task {
-      let data: Payload = try await networkTransport.request(MockEndpoint.patch(["foo": "foo", "bar": "bar"]))
-      XCTAssertTrue(data.json?.foo == params.foo)
-      XCTAssertTrue(data.json?.bar == params.bar)
-      expectationPatch.fulfill()
-    }
-
-    wait(for: [
-      expectationGet,
-      expectationDelete,
-      expectationPost,
-      expectationPut,
-      expectationPatch,
-    ], timeout: 5)
+    static var host: String { "https://httpbin.org" }
   }
 
-  func testVoidResponse() {
-    let expectation200 = XCTestExpectation(description: "[GET] Should get response status code 200")
-    let expectation204 = XCTestExpectation(description: "[GET] Should get response status code 204")
-    let expectation400 = XCTestExpectation(description: "[GET] Should get response status code 400")
-    let expectation401 = XCTestExpectation(description: "[GET] Should get response status code 401")
-    let expectation429 = XCTestExpectation(description: "[GET] Should get response status code 429")
-    let expectation500 = XCTestExpectation(description: "[GET] Should get response status code 500")
-
+  func testDecodableGet() {
     let networkTransport = NetworkTransport()
+    let params = MockEndpoint.Params(foo: "foo", bar: "bar")
+    let expectation = XCTestExpectation()
+
+    Task {
+      let data: MockEndpoint.Payload = try await networkTransport.request(MockEndpoint.get(params: ["foo": "foo", "bar": "bar"]))
+      XCTAssertTrue(data.args?.foo == params.foo)
+      XCTAssertTrue(data.args?.bar == params.bar)
+      expectation.fulfill()
+    }
+
+    wait(for: [expectation], timeout: 5)
+  }
+
+  func testDecodablePost() {
+    let networkTransport = NetworkTransport()
+    let params = MockEndpoint.Params(foo: "foo", bar: "bar")
+    let expectation = XCTestExpectation()
+
+    Task {
+      let data: MockEndpoint.Payload = try await networkTransport.request(MockEndpoint.post(params: ["foo": "foo", "bar": "bar"]))
+      XCTAssertTrue(data.json?.foo == params.foo)
+      XCTAssertTrue(data.json?.bar == params.bar)
+      expectation.fulfill()
+    }
+
+    wait(for: [expectation], timeout: 5)
+  }
+
+  func testDecodablePut() {
+    let networkTransport = NetworkTransport()
+    let params = MockEndpoint.Params(foo: "foo", bar: "bar")
+    let expectation = XCTestExpectation()
+
+    Task {
+      let data: MockEndpoint.Payload = try await networkTransport.request(MockEndpoint.put(params: ["foo": "foo", "bar": "bar"]))
+      XCTAssertTrue(data.json?.foo == params.foo)
+      XCTAssertTrue(data.json?.bar == params.bar)
+      expectation.fulfill()
+    }
+
+    wait(for: [expectation], timeout: 5)
+  }
+
+  func testDecodablePatch() {
+    let networkTransport = NetworkTransport()
+    let params = MockEndpoint.Params(foo: "foo", bar: "bar")
+    let expectation = XCTestExpectation()
+
+    Task {
+      let data: MockEndpoint.Payload = try await networkTransport.request(MockEndpoint.patch(params: ["foo": "foo", "bar": "bar"]))
+      XCTAssertTrue(data.json?.foo == params.foo)
+      XCTAssertTrue(data.json?.bar == params.bar)
+      expectation.fulfill()
+    }
+
+    wait(for: [expectation], timeout: 5)
+  }
+
+  func testDecodableDelete() {
+    let networkTransport = NetworkTransport()
+    let params = MockEndpoint.Params(foo: "foo", bar: "bar")
+    let expectation = XCTestExpectation()
+
+    Task {
+      let data: MockEndpoint.Payload = try await networkTransport.request(MockEndpoint.delete(params: ["foo": "foo", "bar": "bar"]))
+      XCTAssertTrue(data.args?.foo == params.foo)
+      XCTAssertTrue(data.args?.bar == params.bar)
+      expectation.fulfill()
+    }
+
+    wait(for: [expectation], timeout: 5)
+  }
+
+  func testEmpty200() {
+    let networkTransport = NetworkTransport()
+    let expectation = XCTestExpectation()
 
     Task {
       try await networkTransport.request(MockEndpoint.statusCode(code: 200))
-      expectation200.fulfill()
+      expectation.fulfill()
     }
+
+    wait(for: [expectation], timeout: 5)
+  }
+
+  func testEmpty204() {
+    let networkTransport = NetworkTransport()
+    let expectation = XCTestExpectation()
 
     Task {
       try await networkTransport.request(MockEndpoint.statusCode(code: 204))
-      expectation204.fulfill()
+      expectation.fulfill()
     }
+
+    wait(for: [expectation], timeout: 5)
+  }
+
+  func testEmpty400() {
+    let networkTransport = NetworkTransport()
+    let expectation = XCTestExpectation()
 
     Task {
       do {
@@ -127,12 +164,19 @@ class NetworkTransportRequestTests: XCTestCase {
       catch {
         switch error {
         case NetworkError.client:
-          expectation400.fulfill()
+          expectation.fulfill()
         default:
           XCTFail()
         }
       }
     }
+
+    wait(for: [expectation], timeout: 5)
+  }
+
+  func testEmpty401() {
+    let networkTransport = NetworkTransport()
+    let expectation = XCTestExpectation()
 
     Task {
       do {
@@ -142,12 +186,19 @@ class NetworkTransportRequestTests: XCTestCase {
       catch {
         switch error {
         case NetworkError.unauthorized:
-          expectation401.fulfill()
+          expectation.fulfill()
         default:
           XCTFail()
         }
       }
     }
+
+    wait(for: [expectation], timeout: 5)
+  }
+
+  func testEmpty429() {
+    let networkTransport = NetworkTransport()
+    let expectation = XCTestExpectation()
 
     Task {
       do {
@@ -157,12 +208,19 @@ class NetworkTransportRequestTests: XCTestCase {
       catch {
         switch error {
         case NetworkError.tooManyRequests:
-          expectation429.fulfill()
+          expectation.fulfill()
         default:
           XCTFail()
         }
       }
     }
+
+    wait(for: [expectation], timeout: 5)
+  }
+
+  func testEmpty500() {
+    let networkTransport = NetworkTransport()
+    let expectation = XCTestExpectation()
 
     Task {
       do {
@@ -172,20 +230,13 @@ class NetworkTransportRequestTests: XCTestCase {
       catch {
         switch error {
         case NetworkError.server:
-          expectation500.fulfill()
+          expectation.fulfill()
         default:
           XCTFail()
         }
       }
     }
 
-    wait(for: [
-      expectation200,
-      expectation204,
-      expectation400,
-      expectation401,
-      expectation429,
-      expectation500,
-    ], timeout: 5)
+    wait(for: [expectation], timeout: 5)
   }
 }

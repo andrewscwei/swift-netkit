@@ -108,16 +108,7 @@ extension NetworkTransport {
         interceptor: policy,
         requestModifier: { $0.timeoutInterval = endpoint.timeout }
       )
-        .validate { urlRequest, response, data in
-          do {
-            try self.policy.validate(response: response)
-
-            return .success(())
-          }
-          catch {
-            return .failure(error)
-          }
-        }
+        .validate { _, _, _ in .success(()) }
 
       addRequestToQueue(request: request, tag: tag)
 
