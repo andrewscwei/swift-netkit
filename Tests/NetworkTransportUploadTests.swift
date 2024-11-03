@@ -23,7 +23,7 @@ class NetworkTransportUploadTests: XCTestCase {
       }
     }
 
-    var parameters: [String: Any]? {
+    var parameters: [String: any Sendable]? {
       switch self {
       case let .post(params): return params
       default: return nil

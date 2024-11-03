@@ -22,7 +22,7 @@ public protocol NetworkTransportPolicy: RequestInterceptor {
 }
 
 extension NetworkTransportPolicy {
-  public func adapt(_ urlRequest: URLRequest, for session: Session, completion: @escaping (Result<URLRequest, Error>) -> Void) {
+  public func adapt(_ urlRequest: URLRequest, for session: Session, completion: @escaping @Sendable (Result<URLRequest, Error>) -> Void) {
     Task {
       do {
         var urlRequest = urlRequest
