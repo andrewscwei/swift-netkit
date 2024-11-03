@@ -43,7 +43,7 @@ extension NetworkEndpoint {
     ]
   }
   
-  public var parameters: [String: Any]? { nil }
+  public var parameters: [String: any Sendable]? { nil }
 
   public var description: String { "[\(method.rawValue.uppercased())] \(Self.host)\(path)" }
 
