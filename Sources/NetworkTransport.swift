@@ -71,7 +71,7 @@ public actor NetworkTransport {
     requestQueue[tag]?.cancel()
     requestQueue[tag] = request
 
-    _log.debug("Adding request with tag <\(tag)> to queue... OK: Queue = \(requestQueue.keys)")
+    _log.debug("Enqueuing request <\(tag)>... OK: Queue = \(requestQueue.keys)")
 
     return request
   }
@@ -85,11 +85,11 @@ public actor NetworkTransport {
   @discardableResult
   func removeRequestFromQueue(tag: String) -> Request? {
     guard let request = getActiveRequest(tag: tag) else { return nil }
-    request.cancel()
 
+    request.cancel()
     requestQueue.removeValue(forKey: tag)
 
-    _log.debug("Removing request with tag <\(tag)>... OK: Queue = \(requestQueue.keys)")
+    _log.debug("Dequeuing request <\(tag)>... OK: Queue = \(requestQueue.keys)")
 
     return request
   }
@@ -102,7 +102,7 @@ public actor NetworkTransport {
 
     requestQueue = [:]
 
-    _log.debug("Removing all requests from queue... OK: Queue = \(requestQueue.keys)")
+    _log.debug("Dequeuing all requests... OK: Queue = \(requestQueue.keys)")
   }
 
   func generateTag(from aString: String) -> String {
@@ -112,9 +112,7 @@ public actor NetworkTransport {
       hash = ((hash << 5) &+ hash) &+ UInt32(char)
     }
 
-    let hexHash = String(format: "%08x", hash)
-
-    return String(hexHash.prefix(6))
+    return String(format: "%08x", hash)
   }
 
   func generateTag(from endpoint: NetworkEndpoint) -> String { generateTag(from: endpoint.description) }

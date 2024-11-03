@@ -45,7 +45,7 @@ extension NetworkEndpoint {
   
   public var parameters: [String: Any]? { nil }
 
-  public var description: String { "[\(method.rawValue.uppercased())] \(path)" }
+  public var description: String { "[\(method.rawValue.uppercased())] \(Self.host)\(path)" }
 
   public func asURL() throws -> URL {
     guard
