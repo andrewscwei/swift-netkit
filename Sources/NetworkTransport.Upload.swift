@@ -28,6 +28,10 @@ extension NetworkTransport {
     let response = await request.serializingDecodable(T.self).response
     let statusCode = response.response?.statusCode
 
+    defer {
+      removeRequestFromQueue(tag: tag)
+    }
+
     do {
       let data = try policy.parseResponse(response)
 
@@ -71,6 +75,10 @@ extension NetworkTransport {
     let request = createRequest(endpoint, tag: tag, replace: replace)
     let response = await request.serializingDecodable(Empty.self).response
     let statusCode = response.response?.statusCode
+
+    defer {
+      removeRequestFromQueue(tag: tag)
+    }
 
     do {
       try policy.parseResponse(response)

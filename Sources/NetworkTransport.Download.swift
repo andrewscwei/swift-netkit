@@ -31,6 +31,10 @@ extension NetworkTransport {
     let tag = tag ?? generateTag(from: String(describing: url))
     let request = createRequest(from: url, to: directory, fileName: fileName, extension: ext, tag: tag, replace: replace)
 
+    defer {
+      removeRequestFromQueue(tag: tag)
+    }
+
     _log.debug("<\(tag)> Downloading from \(url)...")
 
     let response = await request
