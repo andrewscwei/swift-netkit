@@ -2,9 +2,12 @@ name: CD
 on:
   push:
     branches: [master]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
-  build:
-    name: Build
+  release:
+    name: Release
     runs-on: macos-15
     steps:
       - name: Checkout
@@ -15,23 +18,21 @@ jobs:
           bundler-cache: true
       - name: Set up Node
         uses: actions/setup-node@v4
-        with:
-          node-version: 21
       - name: Test
         run: bundle exec fastlane test
-      - name: Release semantic version
+      - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx semantic-release
   notify:
     name: Notify
-    needs: [build]
+    needs: [release]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
       - uses: andrewscwei/telegram-action@v1
         with:
-          success: ${{ needs.build.result == 'success' }}
-          cancelled: ${{ needs.build.result == 'cancelled' }}
+          success: ${{ needs.release.result == 'success' }}
+          cancelled: ${{ needs.release.result == 'cancelled' }}
           bot-token: ${{ secrets.TELEGRAM_DEVOPS_BOT_TOKEN }}
           chat-id: ${{ secrets.TELEGRAM_DEVOPS_CHAT_ID }}
