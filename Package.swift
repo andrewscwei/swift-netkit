@@ -2,12 +2,6 @@
 
 import PackageDescription
 
-#if os(Linux)
-import Glibc
-#else
-import Darwin.C
-#endif
-
 let package = Package(
   name: "NetKit",
   platforms: [
