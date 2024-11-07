@@ -33,6 +33,8 @@ class NetworkTransportUploadTests: XCTestCase {
     static var host: String { "https://httpbin.org" }
   }
 
+  let timeout: TimeInterval = 5
+
   func testDecodableResponse() {
     let networkTransport = NetworkTransport()
     let params = MockEndpoint.Params(foo: "foo", bar: "bar")
@@ -46,7 +48,7 @@ class NetworkTransportUploadTests: XCTestCase {
       expectation.fulfill()
     }
 
-    wait(for: [expectation], timeout: 5)
+    wait(for: [expectation], timeout: timeout)
   }
 
   func testEmpty200() {
@@ -58,7 +60,7 @@ class NetworkTransportUploadTests: XCTestCase {
       expectation.fulfill()
     }
 
-    wait(for: [expectation], timeout: 5)
+    wait(for: [expectation], timeout: timeout)
   }
 
   func testEmpty204() {
@@ -70,7 +72,7 @@ class NetworkTransportUploadTests: XCTestCase {
       expectation.fulfill()
     }
 
-    wait(for: [expectation], timeout: 5)
+    wait(for: [expectation], timeout: timeout)
   }
 
   func testEmpty400() {
@@ -92,7 +94,7 @@ class NetworkTransportUploadTests: XCTestCase {
       }
     }
 
-    wait(for: [expectation], timeout: 5)
+    wait(for: [expectation], timeout: timeout)
   }
 
   func testEmpty401() {
@@ -114,7 +116,7 @@ class NetworkTransportUploadTests: XCTestCase {
       }
     }
 
-    wait(for: [expectation], timeout: 5)
+    wait(for: [expectation], timeout: timeout)
   }
 
   func testEmpty429() {
@@ -136,7 +138,7 @@ class NetworkTransportUploadTests: XCTestCase {
       }
     }
 
-    wait(for: [expectation], timeout: 5)
+    wait(for: [expectation], timeout: timeout)
   }
 
   func testEmpty500() {
@@ -158,6 +160,6 @@ class NetworkTransportUploadTests: XCTestCase {
       }
     }
 
-    wait(for: [expectation], timeout: 5)
+    wait(for: [expectation], timeout: timeout)
   }
 }

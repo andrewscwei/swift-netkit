@@ -2,7 +2,6 @@ import XCTest
 @testable import NetKit
 
 class NetworkTransportDownloadTests: XCTestCase {
-
   enum MockEndpoint: NetworkEndpoint {
     case image
 
@@ -15,6 +14,8 @@ class NetworkTransportDownloadTests: XCTestCase {
     static var host: String { "https://httpbin.org" }
   }
 
+  let timeout: TimeInterval = 5
+  
   func testImageDownload() {
     let networkTransport = NetworkTransport()
     let expectation = XCTestExpectation()
@@ -24,6 +25,6 @@ class NetworkTransportDownloadTests: XCTestCase {
       expectation.fulfill()
     }
 
-    wait(for: [expectation], timeout: 5)
+    wait(for: [expectation], timeout: timeout)
   }
 }
