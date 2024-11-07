@@ -34,7 +34,8 @@ extension NetworkTransport {
     do {
       let data = try policy.parseResponse(response)
 
-      _log.debug("<\(tag)> Requesting \(endpoint)... [\(statusCode ?? 0)] OK: \(data)")
+      _log.debug("<\(tag)> Requesting \(endpoint)... [\(statusCode ?? 0)] OK")
+      _log.debug("> data=\(data)")
 
       return data
     }
@@ -45,8 +46,8 @@ extension NetworkTransport {
       else {
         _log.error("<\(tag)> Requesting \(endpoint)... [\(statusCode ?? 0)] ERR: \(error)")
 
-        if let data = response.data, let json = try? JSONSerialization.jsonObject(with: data) {
-          _log.error("Raw payload = \(json)")
+        if let payload = response.data, let json = try? JSONSerialization.jsonObject(with: payload) {
+          _log.error("> payload = \(json)")
         }
       }
 
@@ -86,8 +87,8 @@ extension NetworkTransport {
       else {
         _log.error("<\(tag)> Requesting \(endpoint)... [\(statusCode ?? 0)] ERR: \(error)")
 
-        if let data = response.data, let json = try? JSONSerialization.jsonObject(with: data) {
-          _log.error("Raw payload = \(json)")
+        if let payload = response.data, let json = try? JSONSerialization.jsonObject(with: payload) {
+          _log.error("> payload = \(json)")
         }
       }
 
