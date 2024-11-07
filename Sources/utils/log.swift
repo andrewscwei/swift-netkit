@@ -9,12 +9,12 @@ struct Log: Sendable {
 
   let mode: Mode
 
-  func info(_ message: String, isPublic: Bool = true, fileName: String = #file, functionName: String = #function, lineNumber: Int = #line) { log(message, level: .info, isPublic: isPublic, fileName: fileName, functionName: functionName, lineNumber: lineNumber) }
-  func debug(_ message: String, isPublic: Bool = true, fileName: String = #file, functionName: String = #function, lineNumber: Int = #line) { log(message, level: .debug, isPublic: isPublic, fileName: fileName, functionName: functionName, lineNumber: lineNumber) }
-  func error(_ message: String, isPublic: Bool = true, fileName: String = #file, functionName: String = #function, lineNumber: Int = #line) { log(message, level: .error, isPublic: isPublic, fileName: fileName, functionName: functionName, lineNumber: lineNumber) }
-  func fault(_ message: String, isPublic: Bool = true, fileName: String = #file, functionName: String = #function, lineNumber: Int = #line) { log(message, level: .fault, isPublic: isPublic, fileName: fileName, functionName: functionName, lineNumber: lineNumber) }
+  func info(isPublic: Bool = true, fileName: String = #file, functionName: String = #function, lineNumber: Int = #line, _ message: () -> String) { log(level: .info, isPublic: isPublic, fileName: fileName, functionName: functionName, lineNumber: lineNumber, message) }
+  func debug(isPublic: Bool = true, fileName: String = #file, functionName: String = #function, lineNumber: Int = #line, _ message: () -> String) { log(level: .debug, isPublic: isPublic, fileName: fileName, functionName: functionName, lineNumber: lineNumber, message) }
+  func error(isPublic: Bool = true, fileName: String = #file, functionName: String = #function, lineNumber: Int = #line, _ message: () -> String) { log(level: .error, isPublic: isPublic, fileName: fileName, functionName: functionName, lineNumber: lineNumber, message) }
+  func fault(isPublic: Bool = true, fileName: String = #file, functionName: String = #function, lineNumber: Int = #line, _ message: () -> String) { log(level: .fault, isPublic: isPublic, fileName: fileName, functionName: functionName, lineNumber: lineNumber, message) }
 
-  private func log(_ message: String, level: OSLogType = .info, isPublic: Bool, fileName: String, functionName: String, lineNumber: Int) {
+  private func log(level: OSLogType = .info, isPublic: Bool, fileName: String, functionName: String, lineNumber: Int, _ message: () -> String) {
     guard mode != .none else { return }
 
 #if !DEBUG
@@ -22,7 +22,7 @@ struct Log: Sendable {
 #endif
 
     let prefix = "[🌐]"
-    let message = [prefix, getSymbol(for: level), message].compactMap { $0 }.joined(separator: " ")
+    let message = [prefix, getSymbol(for: level), message()].compactMap { $0 }.joined(separator: " ")
     let fileName = fileName.components(separatedBy: "/").last?.components(separatedBy: ".").first
     let subsystem = "\(Bundle.main.bundleIdentifier ?? "app").netkit"
     let category = "\(fileName ?? "???"):\(lineNumber)"

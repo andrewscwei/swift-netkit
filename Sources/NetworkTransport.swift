@@ -64,14 +64,14 @@ public actor NetworkTransport {
   @discardableResult
   func addRequestToQueue(request: Request, tag: String, overwriteExisting: Bool = true) -> Request {
     if !overwriteExisting, let existingRequest = getActiveRequest(tag: tag) {
-      _log.debug("Adding request with tag <\(tag)> to queue... SKIP: A request already exists with that tag, returning the existing request instead")
+      _log.debug { "Adding request with tag <\(tag)> to queue... SKIP: A request already exists with that tag, returning the existing request instead" }
       return existingRequest
     }
 
     requestQueue[tag]?.cancel()
     requestQueue[tag] = request
 
-    _log.debug("Enqueuing request <\(tag)>... OK: Queue = \(requestQueue.keys)")
+    _log.debug { "Enqueuing request <\(tag)>... OK: Queue = \(requestQueue.keys)" }
 
     return request
   }
@@ -93,7 +93,7 @@ public actor NetworkTransport {
 
     requestQueue.removeValue(forKey: tag)
 
-    _log.debug("Dequeuing request <\(tag)>... OK: Queue = \(requestQueue.keys)")
+    _log.debug { "Dequeuing request <\(tag)>... OK: Queue = \(requestQueue.keys)" }
 
     return request
   }
@@ -106,7 +106,7 @@ public actor NetworkTransport {
 
     requestQueue = [:]
 
-    _log.debug("Dequeuing all requests... OK: Queue = \(requestQueue.keys)")
+    _log.debug { "Dequeuing all requests... OK: Queue = \(requestQueue.keys)" }
   }
 
   func generateTag(from aString: String) -> String {

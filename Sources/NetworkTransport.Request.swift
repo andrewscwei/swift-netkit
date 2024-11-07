@@ -25,7 +25,7 @@ extension NetworkTransport {
   ) async throws -> T {
     let tag = tag ?? generateTag(from: endpoint)
 
-    _log.debug("<\(tag)> Requesting \(endpoint)...")
+    _log.debug { "<\(tag)> Requesting \(endpoint)..." }
 
     let request = createRequest(endpoint, tag: tag, replace: replace)
     let response = await request.serializingDecodable(T.self).response
@@ -38,20 +38,20 @@ extension NetworkTransport {
     do {
       let data = try policy.parseResponse(response)
 
-      _log.debug("<\(tag)> Requesting \(endpoint)... [\(statusCode ?? 0)] OK")
-      _log.debug("↘︎ data=\(data)")
+      _log.debug { "<\(tag)> Requesting \(endpoint)... [\(statusCode ?? 0)] OK" }
+      _log.debug { "↘︎ data=\(data)" }
 
       return data
     }
     catch {
       if let error = error as? NetworkError, case .cancelled = error {
-        _log.debug("<\(tag)> Requesting \(endpoint)... [\(statusCode ?? 0)] CANCEL: \(error)")
+        _log.debug { "<\(tag)> Requesting \(endpoint)... [\(statusCode ?? 0)] CANCEL: \(error)" }
       }
       else {
-        _log.error("<\(tag)> Requesting \(endpoint)... [\(statusCode ?? 0)] ERR: \(error)")
+        _log.error { "<\(tag)> Requesting \(endpoint)... [\(statusCode ?? 0)] ERR: \(error)" }
 
         if let payload = response.data, let json = try? JSONSerialization.jsonObject(with: payload) {
-          _log.error("↘︎ payload = \(json)")
+          _log.error { "↘︎ payload = \(json)" }
         }
       }
 
@@ -73,7 +73,7 @@ extension NetworkTransport {
   ) async throws {
     let tag = tag ?? generateTag(from: endpoint)
 
-    _log.debug("<\(tag)> Requesting \(endpoint)...")
+    _log.debug { "<\(tag)> Requesting \(endpoint)..." }
 
     let request = createRequest(endpoint, tag: tag, replace: replace)
     let response = await request.serializingDecodable(Empty.self).response
@@ -86,17 +86,17 @@ extension NetworkTransport {
     do {
       try policy.parseResponse(response)
 
-      _log.debug("<\(tag)> Requesting \(endpoint)... [\(statusCode ?? 0)] OK")
+      _log.debug { "<\(tag)> Requesting \(endpoint)... [\(statusCode ?? 0)] OK" }
     }
     catch {
       if let error = error as? NetworkError, case .cancelled = error {
-        _log.debug("<\(tag)> Requesting \(endpoint)... [\(statusCode ?? 0)] CANCEL: \(error)")
+        _log.debug { "<\(tag)> Requesting \(endpoint)... [\(statusCode ?? 0)] CANCEL: \(error)" }
       }
       else {
-        _log.error("<\(tag)> Requesting \(endpoint)... [\(statusCode ?? 0)] ERR: \(error)")
+        _log.error { "<\(tag)> Requesting \(endpoint)... [\(statusCode ?? 0)] ERR: \(error)" }
 
         if let payload = response.data, let json = try? JSONSerialization.jsonObject(with: payload) {
-          _log.error("↘︎ payload = \(json)")
+          _log.error { "↘︎ payload = \(json)" }
         }
       }
 

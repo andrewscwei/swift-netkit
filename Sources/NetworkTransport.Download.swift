@@ -35,7 +35,7 @@ extension NetworkTransport {
       removeRequestFromQueue(tag: tag)
     }
 
-    _log.debug("<\(tag)> Downloading from \(url)...")
+    _log.debug { "<\(tag)> Downloading from \(url)..." }
 
     let response = await request
       .serializingDownloadedFileURL()
@@ -46,16 +46,16 @@ extension NetworkTransport {
     do {
       let fileURL = try policy.parseResponse(response)
 
-      _log.debug("<\(tag)> Downloading from \(url)... [\(statusCode ?? 0)] OK: \(fileURL)")
+      _log.debug { "<\(tag)> Downloading from \(url)... [\(statusCode ?? 0)] OK: \(fileURL)" }
 
       return fileURL
     }
     catch {
       if let error = error as? NetworkError, case .cancelled = error {
-        _log.debug("<\(tag)> Downloading from \(url)... [\(statusCode ?? 0)] CANCEL: \(error)")
+        _log.debug { "<\(tag)> Downloading from \(url)... [\(statusCode ?? 0)] CANCEL: \(error)" }
       }
       else {
-        _log.error("<\(tag)> Downloading from \(url)... [\(statusCode ?? 0)] ERR: \(error)")
+        _log.error { "<\(tag)> Downloading from \(url)... [\(statusCode ?? 0)] ERR: \(error)" }
       }
 
       throw error
