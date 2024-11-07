@@ -40,7 +40,7 @@ extension NetworkTransport {
       let data = try policy.parseResponse(response)
 
       _log.debug("<\(tag)> Uploading to \"\(endpoint)\"... [\(statusCode ?? 0)] OK")
-      _log.debug("> data=\(data)")
+      _log.debug("↘︎ data=\(data)")
 
       return data
     }
@@ -52,7 +52,7 @@ extension NetworkTransport {
         _log.error("<\(tag)> Uploading to \"\(endpoint)\"... [\(statusCode ?? 0)] ERR: \(error)")
 
         if let payload = response.data, let json = try? JSONSerialization.jsonObject(with: payload) {
-          _log.error("> payload = \(json)")
+          _log.error("↘︎ payload = \(json)")
         }
       }
 
@@ -102,7 +102,7 @@ extension NetworkTransport {
         _log.error("<\(tag)> Uploading to \"\(endpoint)\"... [\(statusCode ?? 0)] ERR: \(error)")
 
         if let payload = response.data, let json = try? JSONSerialization.jsonObject(with: payload) {
-          _log.error("> payload = \(json)")
+          _log.error("↘︎ payload = \(json)")
         }
       }
 
