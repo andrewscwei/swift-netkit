@@ -18,7 +18,11 @@ extension NetworkTransport {
   ///
   /// - Returns: The decoded response data.
   @discardableResult
-  public func request<T: Decodable & Sendable>(_ endpoint: NetworkEndpoint, tag: String? = nil, replace: Bool = true) async throws -> T {
+  public func request<T: Decodable & Sendable>(
+    _ endpoint: NetworkEndpoint,
+    tag: String? = nil,
+    replace: Bool = false
+  ) async throws -> T {
     let tag = tag ?? generateTag(from: endpoint)
 
     _log.debug("<\(tag)> Requesting \(endpoint)...")
@@ -62,7 +66,11 @@ extension NetworkTransport {
   ///   - tag: Custom identifier tag, auto-generated if unspecified.
   ///   - replace: Indicates if this request should repalce an existing active
   ///              request with the same tag by cancelling it.
-  public func request(_ endpoint: NetworkEndpoint, tag: String? = nil, replace: Bool = true) async throws {
+  public func request(
+    _ endpoint: NetworkEndpoint,
+    tag: String? = nil,
+    replace: Bool = false
+  ) async throws {
     let tag = tag ?? generateTag(from: endpoint)
 
     _log.debug("<\(tag)> Requesting \(endpoint)...")

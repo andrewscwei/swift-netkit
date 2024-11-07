@@ -26,7 +26,7 @@ extension NetworkTransport {
     fileName: String = UUID().uuidString,
     extension ext: String? = nil,
     tag: String? = nil,
-    replace: Bool = true
+    replace: Bool = false
   ) async throws -> URL {
     let tag = tag ?? generateTag(from: String(describing: url))
     let request = createRequest(from: url, to: directory, fileName: fileName, extension: ext, tag: tag, replace: replace)
