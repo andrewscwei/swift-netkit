@@ -80,13 +80,17 @@ public actor NetworkTransport {
   ///
   /// - Parameters:
   ///   - tag: The tag associated with the request.
+  ///   - forceCancel: Specifies if the request should be focibly cancelled.
   ///
   /// - Returns: The removed request.
   @discardableResult
-  func removeRequestFromQueue(tag: String) -> Request? {
+  func removeRequestFromQueue(tag: String, forceCancel: Bool = false) -> Request? {
     guard let request = getActiveRequest(tag: tag) else { return nil }
 
-    request.cancel()
+    if forceCancel {
+      request.cancel()
+    }
+
     requestQueue.removeValue(forKey: tag)
 
     _log.debug("Dequeuing request <\(tag)>... OK: Queue = \(requestQueue.keys)")

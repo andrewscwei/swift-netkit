@@ -109,7 +109,7 @@ extension NetworkTransport {
       return request
     }
     else {
-      removeRequestFromQueue(tag: tag)
+      removeRequestFromQueue(tag: tag, forceCancel: true)
 
       let request = AF.request(
         endpoint,

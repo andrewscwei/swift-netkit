@@ -67,7 +67,7 @@ extension NetworkTransport {
       return request
     }
     else {
-      removeRequestFromQueue(tag: tag)
+      removeRequestFromQueue(tag: tag, forceCancel: true)
 
       let destination: DownloadRequest.Destination = { (_, _) in
         var fileURL = directory.appendingPathComponent(fileName)
