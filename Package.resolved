@@ -1,25 +1,15 @@
 {
-  "object": {
-    "pins": [
-      {
-        "package": "Alamofire",
-        "repositoryURL": "https://github.com/Alamofire/Alamofire.git",
-        "state": {
-          "branch": null,
-          "revision": "e16d3481f5ed35f0472cb93350085853d754913f",
-          "version": "5.10.1"
-        }
-      },
-      {
-        "package": "SwiftyJSON",
-        "repositoryURL": "https://github.com/SwiftyJSON/SwiftyJSON.git",
-        "state": {
-          "branch": null,
-          "revision": "af76cf3ef710b6ca5f8c05f3a31307d44a3c5828",
-          "version": "5.0.2"
-        }
+  "originHash" : "a24dfa9c70f20c97f11444123ffa486b1cbbbbdf8e851bf68cabcb3df9343f3a",
+  "pins" : [
+    {
+      "identity" : "alamofire",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Alamofire/Alamofire.git",
+      "state" : {
+        "revision" : "e16d3481f5ed35f0472cb93350085853d754913f",
+        "version" : "5.10.1"
       }
-    ]
-  },
-  "version": 1
+    }
+  ],
+  "version" : 3
 }

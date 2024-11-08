@@ -1,6 +1,5 @@
 import Alamofire
 import Foundation
-import SwiftyJSON
 
 extension NetworkTransport {
 
@@ -148,19 +147,37 @@ extension NetworkTransport {
         formData.append(data, withName: key, fileName: key, mimeType: data.mimeType)
       }
       else {
-        let json = JSON(value)
+        // Convert other types to JSON
+        do {
+          let data: Data
 
-        if let rawString = json.rawString(), let data = rawString.data(using: .utf8) {
+          if JSONSerialization.isValidJSONObject(value) {
+            data = try JSONSerialization.data(withJSONObject: value, options: [])
+          }
+          else if let stringValue = value as? String {
+            data = stringValue.data(using: .utf8) ?? Data()
+          }
+          else if let intValue = value as? Int {
+            data = "\(intValue)".data(using: .utf8) ?? Data()
+          }
+          else if let doubleValue = value as? Double {
+            data = "\(doubleValue)".data(using: .utf8) ?? Data()
+          }
+          else if let boolValue = value as? Bool {
+            data = (boolValue ? "true" : "false").data(using: .utf8) ?? Data()
+          }
+          else {
+            throw NetworkError.encoding(cause: NSError(
+              domain: "Invalid parameter type",
+              code: -1,
+              userInfo: [NSLocalizedDescriptionKey: "Cannot encode parameter of type \(type(of: value))"]
+            ))
+          }
+
           formData.append(data, withName: key)
         }
-        else {
-          do {
-            let data = try json.rawData()
-            formData.append(data, withName: key)
-          }
-          catch {
-            throw NetworkError.encoding(cause: error)
-          }
+        catch {
+          throw NetworkError.encoding(cause: error)
         }
       }
     }

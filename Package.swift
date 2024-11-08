@@ -20,14 +20,12 @@ let package = Package(
   ],
   dependencies: [
     .package(url: "https://github.com/Alamofire/Alamofire.git", .upToNextMajor(from: "5.0.0")),
-    .package(url: "https://github.com/SwiftyJSON/SwiftyJSON.git", .upToNextMajor(from: "5.0.0")),
   ],
   targets: [
     .target(
       name: "NetKit",
       dependencies: [
         "Alamofire",
-        "SwiftyJSON",
       ],
       path: "Sources"
     ),
