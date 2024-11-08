@@ -55,13 +55,17 @@ extension NetworkTransport {
       if
         let data = Empty.value as? R,
         case .decoding(_, _, let cause) = networkError,
-        case .responseSerializationFailed(let reason) = cause as? AFError,
-        case .inputDataNilOrZeroLength = reason
+        case .responseSerializationFailed(let reason) = cause as? AFError
       {
-        _log.debug { "<\(tag)> Requesting \"\(endpoint)\"... [\(statusCode ?? 0)] OK" }
-        _log.debug { "↘︎ payload=\(data)" }
-
-        return data
+        switch reason {
+        case .inputDataNilOrZeroLength, .invalidEmptyResponse:
+          _log.debug { "<\(tag)> Requesting \"\(endpoint)\"... [\(statusCode ?? 0)] OK" }
+          _log.debug { "↘︎ payload=\(data)" }
+          
+          return data
+        default:
+          break
+        }
       }
 
       _log.error { "<\(tag)> Requesting \(endpoint)... [\(statusCode ?? 0)] \(NetworkError.isCancelled(networkError) ? "CANCEL" : "ERR"): \(networkError)" }
