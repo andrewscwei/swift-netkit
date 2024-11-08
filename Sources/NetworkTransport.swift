@@ -32,19 +32,6 @@ public actor NetworkTransport {
     self.policy = policy
   }
 
-  /// Gets the active request by its tag name. An active request refers to an
-  /// existing request that is not cancelled, finished or suspended.
-  ///
-  /// - Parameters:
-  ///   - tag: The tag associated with the request.
-  ///
-  /// - Returns: The active request if there is a match.
-  public func getActiveRequest(tag: String) -> Request? {
-    guard let request = requestQueue[tag], !request.isCancelled, !request.isFinished, !request.isSuspended else { return nil }
-
-    return request
-  }
-
   /// Cancels and clears all existing requests.
   public func clearAllRequests() {
     for (_, request) in requestQueue {
@@ -57,8 +44,7 @@ public actor NetworkTransport {
   }
 
   @discardableResult
-  func addRequestToQueue(_ request: Request, tag: String) -> Request {
-    requestQueue[tag]?.cancel()
+  func addRequestToQueue<T: Request>(_ request: T, tag: String) -> T {
     requestQueue[tag] = request
 
     _log.debug { "Enqueuing request <\(tag)>... OK: Queue = \(requestQueue.keys)" }
@@ -68,7 +54,7 @@ public actor NetworkTransport {
 
   @discardableResult
   func removeRequestFromQueue(tag: String, forceCancel: Bool = false) -> Request? {
-    guard let request = getActiveRequest(tag: tag) else { return nil }
+    guard let request = requestQueue[tag] else { return nil }
 
     if forceCancel {
       request.cancel()
@@ -77,6 +63,14 @@ public actor NetworkTransport {
     requestQueue.removeValue(forKey: tag)
 
     _log.debug { "Dequeuing request <\(tag)>... OK: Queue = \(requestQueue.keys)" }
+
+    return request
+  }
+
+  func getActiveRequest(tag: String) -> Request? {
+    guard let request = requestQueue[tag], !request.isCancelled, !request.isFinished, !request.isSuspended else {
+      return nil
+    }
 
     return request
   }

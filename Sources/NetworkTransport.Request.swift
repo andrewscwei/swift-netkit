@@ -3,63 +3,105 @@ import Foundation
 
 extension NetworkTransport {
 
-  /// Sends a request to a `NetworkEndpoint`, returning decodable data of type
-  /// `T` from the response.
+  /// Sends a request to a `NetworkEndpoint`, returning data of type `R` from
+  /// mapping the decodable response payload of type `T`.
   ///
-  /// Custom response parsing can be provided by a `NetworkTransportPolicy`. If
-  /// `T` conforms to `ErrorConvertible` and the response data can be
-  /// constructed as an error, it will be automatically thrown.
+  /// Custom host, headers and/or status code validation can be provided by a
+  /// `NetworkTransportPolicy`. If `T` conforms to `ErrorConvertible` and the
+  /// response data can be constructed as an error, it will be automatically
+  /// thrown.
   ///
   /// - Parameters:
   ///   - endpoint: The `NetworkEndpoint`.
   ///   - tag: Custom identifier tag, auto-generated if unspecified.
   ///   - replace: Indicates if this request should repalce an existing active
   ///              request with the same tag by cancelling it.
-  ///
-  /// - Returns: The decoded response data.
-  @discardableResult
-  public func request<T: Decodable & Sendable>(
+  ///   - map: Closure for mapping decodable response payload `T` to output data
+  ///          `R`.
+  /// - Returns: The decoded and mapped response data.
+  public func request<T: Decodable & Sendable, R: Decodable & Sendable>(
     _ endpoint: NetworkEndpoint,
     tag: String? = nil,
-    replace: Bool = false
-  ) async throws -> T {
+    replace: Bool = false,
+    map: @escaping (T) throws -> R
+  ) async throws -> R {
     let tag = tag ?? generateTag(from: endpoint)
+    let request = createRequest(endpoint, tag: tag, replace: replace)
 
     _log.debug { "<\(tag)> Requesting \(endpoint)..." }
-
-    let request = createRequest(endpoint, tag: tag, replace: replace)
-    let response = await request.serializingDecodable(T.self).response
-    let statusCode = response.response?.statusCode
 
     defer {
       removeRequestFromQueue(tag: tag)
     }
 
+    let response = await request
+      .validate { @Sendable in self.policy.validateDecodable(statusCode: $1.statusCode, data: $2, of: T.self) }
+      .serializingDecodable(T.self)
+      .response
+
+    let statusCode = response.response?.statusCode
+
     do {
-      let data = try policy.parseResponse(response)
+      let data = try response.result.get()
 
       _log.debug { "<\(tag)> Requesting \(endpoint)... [\(statusCode ?? 0)] OK" }
       _log.debug { "↘︎ payload=\(data)" }
 
-      return data
+      return try map(data)
     }
     catch {
-      if let error = error as? NetworkError, case .cancelled = error {
-        _log.debug { "<\(tag)> Requesting \(endpoint)... [\(statusCode ?? 0)] CANCEL: \(error)" }
-      }
-      else {
-        _log.error { "<\(tag)> Requesting \(endpoint)... [\(statusCode ?? 0)] ERR: \(error)" }
+      let networkError = NetworkError.from(error)
 
-        if let data = response.data {
-          _log.error { "↘︎ payload=\(String(data: data, encoding: .utf8) ?? "<empty>")" }
-        }
+      if
+        let data = Empty.value as? R,
+        case .decoding(_, _, let cause) = networkError,
+        case .responseSerializationFailed(let reason) = cause as? AFError,
+        case .inputDataNilOrZeroLength = reason
+      {
+        _log.debug { "<\(tag)> Requesting \"\(endpoint)\"... [\(statusCode ?? 0)] OK" }
+        _log.debug { "↘︎ payload=\(data)" }
+
+        return data
       }
 
-      throw error
+      _log.error { "<\(tag)> Requesting \(endpoint)... [\(statusCode ?? 0)] \(NetworkError.isCancelled(networkError) ? "CANCEL" : "ERR"): \(networkError)" }
+
+      if let data = response.data {
+        _log.error { "↘︎ payload=\(String(data: data, encoding: .utf8) ?? "<empty>")" }
+      }
+
+      throw networkError
     }
   }
 
+  /// Sends a request to a `NetworkEndpoint`, returning decodable data of type
+  /// `T` from the response.
+  ///
+  /// Custom host, headers and/or status code validation can be provided by a
+  /// `NetworkTransportPolicy`. If `T` conforms to `ErrorConvertible` and the
+  /// response data can be constructed as an error, it will be automatically
+  /// thrown.
+  ///
+  /// - Parameters:
+  ///   - endpoint: The `NetworkEndpoint`.
+  ///   - tag: Custom identifier tag, auto-generated if unspecified.
+  ///   - replace: Indicates if this request should repalce an existing active
+  ///              request with the same tag by cancelling it.
+  /// - Returns: The decoded response data.
+  public func request<T: Decodable & Sendable>(
+    _ endpoint: NetworkEndpoint,
+    tag: String? = nil,
+    replace: Bool = false
+  ) async throws -> T {
+    return try await request(endpoint, tag: tag, replace: replace) { $0 }
+  }
+
   /// Sends a request to a `NetworkEndpoint`, ignoring any response data.
+  ///
+  /// Custom host, headers and/or status code validation can be provided by a
+  /// `NetworkTransportPolicy`. If `T` conforms to `ErrorConvertible` and the
+  /// response data can be constructed as an error, it will be automatically
+  /// thrown.
   ///
   /// - Parameters:
   ///   - endpoint: The `NetworkEndpoint`.
@@ -71,73 +113,43 @@ extension NetworkTransport {
     tag: String? = nil,
     replace: Bool = false
   ) async throws {
-    let tag = tag ?? generateTag(from: endpoint)
-
-    _log.debug { "<\(tag)> Requesting \(endpoint)..." }
-
-    let request = createRequest(endpoint, tag: tag, replace: replace)
-    let response = await request.serializingDecodable(Empty.self).response
-    let statusCode = response.response?.statusCode
-
-    defer {
-      removeRequestFromQueue(tag: tag)
-    }
-
-    do {
-      try policy.parseResponse(response)
-
-      _log.debug { "<\(tag)> Requesting \(endpoint)... [\(statusCode ?? 0)] OK" }
-    }
-    catch {
-      if let error = error as? NetworkError, case .cancelled = error {
-        _log.debug { "<\(tag)> Requesting \(endpoint)... [\(statusCode ?? 0)] CANCEL: \(error)" }
-      }
-      else {
-        _log.error { "<\(tag)> Requesting \(endpoint)... [\(statusCode ?? 0)] ERR: \(error)" }
-
-        if let data = response.data {
-          _log.error { "↘︎ payload=\(String(data: data, encoding: .utf8) ?? "<empty>")" }
-        }
-      }
-
-      throw error
-    }
+    let _: Empty = try await request(endpoint, tag: tag, replace: replace)
   }
 
   private func createRequest(_ endpoint: NetworkEndpoint, tag: String, replace: Bool) -> DataRequest {
     if !replace, let request = getActiveRequest(tag: tag) as? DataRequest {
       return request
     }
-    else {
-      removeRequestFromQueue(tag: tag, forceCancel: true)
 
-      let request = AF.request(
-        endpoint,
-        method: endpoint.method,
-        parameters: getSanitizedParameters(for: endpoint),
-        encoding: getParameterEncoder(for: endpoint),
-        headers: .init(endpoint.headers),
-        interceptor: policy,
-        requestModifier: { $0.timeoutInterval = endpoint.timeout }
-      )
-        .validate(policy.validate)
+    removeRequestFromQueue(tag: tag, forceCancel: true)
 
-      addRequestToQueue(request, tag: tag)
+    let request = AF.request(
+      endpoint,
+      method: endpoint.method,
+      parameters: getSanitizedParameters(for: endpoint),
+      encoding: getParameterEncoder(for: endpoint),
+      headers: HTTPHeaders(endpoint.headers),
+      interceptor: policy,
+      requestModifier: { $0.timeoutInterval = endpoint.timeout }
+    )
 
-      return request
-    }
+    return addRequestToQueue(request, tag: tag)
   }
 
   private func getSanitizedParameters(for endpoint: NetworkEndpoint) -> Parameters? {
-    guard let parameters = endpoint.parameters, !parameters.isEmpty else { return nil }
+    guard let parameters = endpoint.parameters, !parameters.isEmpty else {
+      return nil
+    }
 
     return parameters
   }
 
   private func getParameterEncoder(for endpoint: NetworkEndpoint) -> ParameterEncoding {
     switch endpoint.method {
-    case .put, .patch, .post: return JSONEncoding.default
-    default: return URLEncoding(arrayEncoding: .noBrackets, boolEncoding: .literal)
+    case .put, .patch, .post:
+      return JSONEncoding.default
+    default:
+      return URLEncoding(arrayEncoding: .noBrackets, boolEncoding: .literal)
     }
   }
 }

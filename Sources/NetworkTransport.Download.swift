@@ -31,34 +31,32 @@ extension NetworkTransport {
     let tag = tag ?? generateTag(from: String(describing: url))
     let request = createRequest(from: url, to: directory, fileName: fileName, extension: ext, tag: tag, replace: replace)
 
+    _log.debug { "<\(tag)> Downloading from \(url)..." }
+
     defer {
       removeRequestFromQueue(tag: tag)
     }
 
-    _log.debug { "<\(tag)> Downloading from \(url)..." }
-
     let response = await request
+      .validate { @Sendable _, res, _ in self.policy.validateStatusCode(res.statusCode) }
       .serializingDownloadedFileURL()
       .response
 
     let statusCode = response.response?.statusCode
 
     do {
-      let fileURL = try policy.parseResponse(response)
+      let fileURL = try response.result.get()
 
       _log.debug { "<\(tag)> Downloading from \(url)... [\(statusCode ?? 0)] OK: \(fileURL)" }
 
       return fileURL
     }
     catch {
-      if let error = error as? NetworkError, case .cancelled = error {
-        _log.debug { "<\(tag)> Downloading from \(url)... [\(statusCode ?? 0)] CANCEL: \(error)" }
-      }
-      else {
-        _log.error { "<\(tag)> Downloading from \(url)... [\(statusCode ?? 0)] ERR: \(error)" }
-      }
+      let networkError = NetworkError.from(error)
 
-      throw error
+      _log.error { "<\(tag)> Downloading from \(url)... [\(statusCode ?? 0)] \(NetworkError.isCancelled(networkError) ? "CANCEL" : "ERR"): \(networkError)" }
+
+      throw networkError
     }
   }
 
@@ -66,29 +64,25 @@ extension NetworkTransport {
     if !replace, let request = getActiveRequest(tag: tag) as? DownloadRequest {
       return request
     }
-    else {
-      removeRequestFromQueue(tag: tag, forceCancel: true)
 
-      let destination: DownloadRequest.Destination = { (_, _) in
-        var fileURL = directory.appendingPathComponent(fileName)
+    removeRequestFromQueue(tag: tag, forceCancel: true)
 
-        if let ext = ext {
-          fileURL = fileURL.appendingPathExtension(ext)
-        }
+    let destination: DownloadRequest.Destination = { (_, _) in
+      var fileURL = directory.appendingPathComponent(fileName)
 
-        return (fileURL, [.removePreviousFile, .createIntermediateDirectories])
+      if let ext = ext {
+        fileURL = fileURL.appendingPathExtension(ext)
       }
 
-      let request = AF.download(
-        url,
-        interceptor: policy,
-        to: destination
-      )
-        .validate(policy.validate)
-
-      addRequestToQueue(request, tag: tag)
-
-      return request
+      return (fileURL, [.removePreviousFile, .createIntermediateDirectories])
     }
+
+    let request = AF.download(
+      url,
+      interceptor: policy,
+      to: destination
+    )
+
+    return addRequestToQueue(request, tag: tag)
   }
 }

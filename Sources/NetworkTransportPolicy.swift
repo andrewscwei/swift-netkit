@@ -4,6 +4,7 @@ import Foundation
 /// A type provided to `NetworkTransport` to preconfigure and/or intercept its
 /// requests.
 public protocol NetworkTransportPolicy: RequestInterceptor {
+
   /// Resolves and returns the host for the specified `URLRequest`.
   ///
   /// - Parameters:
@@ -19,6 +20,17 @@ public protocol NetworkTransportPolicy: RequestInterceptor {
   ///
   /// - Returns: The resolved headers.
   func resolveHeaders(for urlRequest: URLRequest) async throws -> [String: String]
+
+  /// Validates the response status code prior to returning the response.
+  ///
+  /// The default implementation of this method alreadyhandles common error
+  /// codes. By implementing this method you will be responsible for handling
+  /// all status codes.
+  ///
+  /// - Parameters:
+  ///   - statusCode: The status code.
+  /// - Throws: If the status code should be treated as an error.
+  func validate(statusCode: Int) throws
 }
 
 extension NetworkTransportPolicy {
@@ -59,60 +71,7 @@ extension NetworkTransportPolicy {
 
   public func resolveHeaders(for urlRequest: URLRequest) async throws -> [String: String] { [:] }
 
-  func validate(urlRequest: URLRequest?, urlResponse: HTTPURLResponse, data: Data?) -> Result<Void, any Error> {
-    return .success(())
-  }
-
-  func validate(urlRequest: URLRequest?, urlResponse: HTTPURLResponse, url: URL?) -> Result<Void, any Error> {
-    return .success(())
-  }
-
-  func parseResponse(_ response: DataResponse<Empty, some Error>) throws {
-    switch response.result {
-    case .failure(let error):
-      if let error = error as? AFError, case .responseSerializationFailed(let reason) = error, case .inputDataNilOrZeroLength = reason {
-        fallthrough
-      }
-      else {
-        throw NetworkError.from(error)
-      }
-    case .success:
-      let statusCode = response.response?.statusCode
-      try validateStatusCode(statusCode)
-    }
-  }
-
-  func parseResponse<T>(_ response: DataResponse<T, some Error>) throws -> T {
-    switch response.result {
-    case .failure(let error):
-      throw NetworkError.from(error)
-    case .success(let data):
-      let statusCode = response.response?.statusCode
-      try validateStatusCode(statusCode)
-
-      if let networkError = try? (data as? NetworkErrorConvertible)?.asNetworkError(statusCode: statusCode) {
-        throw networkError
-      }
-
-      return data
-    }
-  }
-
-  func parseResponse(_ response: DownloadResponse<URL, some Error>) throws -> URL {
-    switch response.result {
-    case .failure(let error):
-      throw NetworkError.from(error)
-    case .success(let fileURL):
-      let statusCode = response.response?.statusCode
-      try validateStatusCode(statusCode)
-
-      return fileURL
-    }
-  }
-
-  func validateStatusCode(_ statusCode: Int?) throws {
-    guard let statusCode = statusCode else { throw NetworkError.noResponse }
-
+  public func validate(statusCode: Int) throws {
     switch statusCode {
     case 401:
       throw NetworkError.unauthorized(statusCode: statusCode)
@@ -124,6 +83,50 @@ extension NetworkTransportPolicy {
       throw NetworkError.server(statusCode: statusCode)
     default:
       break
+    }
+  }
+
+  func validateStatusCode(_ statusCode: Int) -> Result<Void, any Error> {
+    do {
+      try validate(statusCode: statusCode)
+
+      return .success(())
+    }
+    catch {
+      return .failure(NetworkError.from(error))
+    }
+  }
+
+  func validateDecodable<T: Decodable>(statusCode: Int, data: Data?, of type: T.Type) -> Result<Void, any Error> {
+    switch validateStatusCode(statusCode) {
+    case .success:
+      return .success(())
+    case .failure(let error):
+      guard let data = data else {
+        return .failure(error)
+      }
+
+      if let convertibleType = T.self as? (Decodable & NetworkErrorConvertible).Type {
+        do {
+          let decoded = try JSONDecoder().decode(convertibleType, from: data)
+          let networkError = try decoded.asNetworkError(statusCode: statusCode)
+
+          return .failure(networkError)
+        }
+        catch {
+          return .failure(NetworkError.decoding(statusCode: statusCode, cause: error))
+        }
+      }
+      else {
+        do {
+          _ = try JSONDecoder().decode(T.self, from: data)
+
+          return .failure(error)
+        }
+        catch {
+          return .failure(NetworkError.decoding(statusCode: statusCode, cause: error))
+        }
+      }
     }
   }
 }
