@@ -158,7 +158,6 @@ extension NetworkError {
   ///
   /// - Parameters:
   ///   - urlError: The `URLError`.
-  ///
   /// - Returns: The `NetworkError`.
   public static func from(_ urlError: URLError) -> NetworkError {
     let errorCode = "\(urlError.errorCode)"
@@ -179,7 +178,6 @@ extension NetworkError {
   ///
   /// - Parameters:
   ///   - afError: The `AFError`.
-  ///
   /// - Returns: The `NetworkError`.
   public static func from(_ afError: AFError) -> NetworkError {
     let statusCode = afError.responseCode
@@ -207,9 +205,8 @@ extension NetworkError {
   ///
   /// - Parameters:
   ///   - error: The `Error`.
-  ///
   /// - Returns: The `NetworkError`.
-  public static func from(_ error: Error) -> NetworkError {
+  public static func from(_ error: any Error) -> NetworkError {
     if let networkError = error as? NetworkError {
       return networkError
     }
@@ -221,6 +218,48 @@ extension NetworkError {
     }
     else {
       return .unknown(cause: error)
+    }
+  }
+  
+  /// Checks if the error is `NetworkError.cancelled`.
+  ///
+  /// - Parameter error: The error.
+  /// - Returns: `true` if the error is `NetworkError.cancelled`, `false`
+  ///            otherwise.
+  public static func isCancelled(_ error: any Error) -> Bool {
+    if let error = error as? NetworkError, case .cancelled = error {
+      return true
+    }
+    else {
+      return false
+    }
+  }
+
+  /// Checks if the error is `NetworkError.timeout`.
+  ///
+  /// - Parameter error: The error.
+  /// - Returns: `true` if the error is `NetworkError.timeout`, `false`
+  ///            otherwise.
+  public static func isTimedOut(_ error: any Error) -> Bool {
+    if let error = error as? NetworkError, case .timeout = error {
+      return true
+    }
+    else {
+      return false
+    }
+  }
+
+  /// Checks if the error is `NetworkError.noNetwork`.
+  ///
+  /// - Parameter error: The error.
+  /// - Returns: `true` if the error is `NetworkError.noNetwork`, `false`
+  ///            otherwise.
+  public static func isNoNetwork(_ error: any Error) -> Bool {
+    if let error = error as? NetworkError, case .noNetwork = error {
+      return true
+    }
+    else {
+      return false
     }
   }
 }
