@@ -59,6 +59,14 @@ extension NetworkTransportPolicy {
 
   public func resolveHeaders(for urlRequest: URLRequest) async throws -> [String: String] { [:] }
 
+  func validate(urlRequest: URLRequest?, urlResponse: HTTPURLResponse, data: Data?) -> Result<Void, any Error> {
+    return .success(())
+  }
+
+  func validate(urlRequest: URLRequest?, urlResponse: HTTPURLResponse, url: URL?) -> Result<Void, any Error> {
+    return .success(())
+  }
+
   func parseResponse(_ response: DataResponse<Empty, some Error>) throws {
     switch response.result {
     case .failure(let error):

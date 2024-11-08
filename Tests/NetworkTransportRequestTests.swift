@@ -18,7 +18,7 @@ class NetworkTransportRequestTests: XCTestCase {
     case post(params: [String: Sendable]? = nil)
     case put(params: [String: Sendable]? = nil)
     case patch(params: [String: Sendable]? = nil)
-    case statusCode(code: Int, params: [String: Sendable]? = nil)
+    case statusCode(code: Int)
 
     var pathDescriptor: PathDescriptor {
       switch self {
@@ -32,7 +32,7 @@ class NetworkTransportRequestTests: XCTestCase {
         return (.put, "/put")
       case .patch:
         return (.patch, "/patch")
-      case .statusCode(let code, _):
+      case .statusCode(let code):
         return (.get, "/status/\(code)")
       }
     }
@@ -44,9 +44,10 @@ class NetworkTransportRequestTests: XCTestCase {
         let .delete(params),
         let .post(params),
         let .put(params),
-        let .patch(params),
-        let .statusCode(_, params):
-          return params
+        let .patch(params):
+        return params
+      default:
+        return nil
       }
     }
 

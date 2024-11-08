@@ -84,9 +84,9 @@ extension NetworkTransport {
         interceptor: policy,
         to: destination
       )
-        .validate { _, _, _ in .success(()) }
+        .validate(policy.validate)
 
-      addRequestToQueue(request: request, tag: tag)
+      addRequestToQueue(request, tag: tag)
 
       return request
     }

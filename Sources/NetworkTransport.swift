@@ -13,14 +13,9 @@ import Foundation
 /// `NetworkError` specific to the application to automatically extract the
 /// error message.
 public actor NetworkTransport {
-
-  /// Default `NetworkTransportPolicy` to use when one is not provided.
   final class DefaultPolicy: NetworkTransportPolicy {}
 
-  /// The policy of this `NetworkTransport`.
   let policy: NetworkTransportPolicy
-
-  /// Map of active network requests accessible by their tags.
   var requestQueue: [String: Request] = [:]
 
   /// Creates a new `NetworkTransport` instance using the default
@@ -50,24 +45,19 @@ public actor NetworkTransport {
     return request
   }
 
-  /// Adds a request to the queue.
-  ///
-  /// - Parameters:
-  ///   - request: The request to add.
-  ///   - tag: The tag to associate with the request.
-  ///   - overwriteExisting: Specifies if the new request should overwrite an
-  ///                        existing one with the same tag. The existing
-  ///                        request will be subsequently cancelled.
-  ///
-  /// - Returns: Either the request that was added, or the existing request with
-  ///            the specified tag name if `overwriteExisting` is `false`.
-  @discardableResult
-  func addRequestToQueue(request: Request, tag: String, overwriteExisting: Bool = true) -> Request {
-    if !overwriteExisting, let existingRequest = getActiveRequest(tag: tag) {
-      _log.debug { "Adding request with tag <\(tag)> to queue... SKIP: A request already exists with that tag, returning the existing request instead" }
-      return existingRequest
+  /// Cancels and clears all existing requests.
+  public func clearAllRequests() {
+    for (_, request) in requestQueue {
+      request.cancel()
     }
 
+    requestQueue = [:]
+
+    _log.debug { "Dequeuing all requests... OK: Queue = \(requestQueue.keys)" }
+  }
+
+  @discardableResult
+  func addRequestToQueue(_ request: Request, tag: String) -> Request {
     requestQueue[tag]?.cancel()
     requestQueue[tag] = request
 
@@ -76,13 +66,6 @@ public actor NetworkTransport {
     return request
   }
 
-  /// Cancels a request and removes it from the queue.
-  ///
-  /// - Parameters:
-  ///   - tag: The tag associated with the request.
-  ///   - forceCancel: Specifies if the request should be focibly cancelled.
-  ///
-  /// - Returns: The removed request.
   @discardableResult
   func removeRequestFromQueue(tag: String, forceCancel: Bool = false) -> Request? {
     guard let request = getActiveRequest(tag: tag) else { return nil }
@@ -96,17 +79,6 @@ public actor NetworkTransport {
     _log.debug { "Dequeuing request <\(tag)>... OK: Queue = \(requestQueue.keys)" }
 
     return request
-  }
-
-  /// Cancels and clears all existing requests.
-  public func clearAllRequests() {
-    for (_, request) in requestQueue {
-      request.cancel()
-    }
-
-    requestQueue = [:]
-
-    _log.debug { "Dequeuing all requests... OK: Queue = \(requestQueue.keys)" }
   }
 
   func generateTag(from aString: String) -> String {

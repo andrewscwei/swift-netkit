@@ -262,4 +262,18 @@ extension NetworkError {
       return false
     }
   }
+
+  /// Checks if the error is `NetworkError.unauthorized`.
+  ///
+  /// - Parameter error: The error.
+  /// - Returns: `true` if the error is `NetworkError.unauthorized`, `false`
+  ///            otherwise.
+  public static func isUnauthorized(_ error: any Error) -> Bool {
+    if let error = error as? NetworkError, case .unauthorized = error {
+      return true
+    }
+    else {
+      return false
+    }
+  }
 }

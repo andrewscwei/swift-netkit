@@ -120,9 +120,9 @@ extension NetworkTransport {
         interceptor: policy,
         requestModifier: { $0.timeoutInterval = endpoint.timeout }
       )
-        .validate { _, _, _ in .success(()) }
+        .validate(policy.validate)
 
-      addRequestToQueue(request: request, tag: tag)
+      addRequestToQueue(request, tag: tag)
 
       return request
     }
