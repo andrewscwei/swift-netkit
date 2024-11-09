@@ -28,7 +28,7 @@ extension NetworkTransport {
     let tag = tag ?? generateTag(from: endpoint)
     let request = createRequest(endpoint, tag: tag, replace: replace)
 
-    _log.debug { "<\(tag)> Requesting \(endpoint)..." }
+    _log.debug { "<\(tag)> Requesting...\n↘︎ endpoint=\(endpoint)" }
 
     defer {
       removeRequestFromQueue(tag: tag)
@@ -44,8 +44,7 @@ extension NetworkTransport {
     do {
       let data = try response.result.get()
 
-      _log.debug { "<\(tag)> Requesting \(endpoint)... [\(statusCode ?? 0)] OK" }
-      _log.debug { "↘︎ payload=\(data)" }
+      _log.debug { "<\(tag)> Requesting... [\(statusCode ?? 0)] OK\n↘︎ payload=\(data)" }
 
       return try map(data)
     }
@@ -59,20 +58,15 @@ extension NetworkTransport {
       {
         switch reason {
         case .inputDataNilOrZeroLength, .invalidEmptyResponse:
-          _log.debug { "<\(tag)> Requesting \"\(endpoint)\"... [\(statusCode ?? 0)] OK" }
-          _log.debug { "↘︎ payload=\(data)" }
-          
+          _log.debug { "<\(tag)> Requesting... [\(statusCode ?? 0)] OK\n↘︎ payload=\(data)" }
+
           return data
         default:
           break
         }
       }
 
-      _log.error { "<\(tag)> Requesting \(endpoint)... [\(statusCode ?? 0)] \(NetworkError.isCancelled(networkError) ? "CANCEL" : "ERR"): \(networkError)" }
-
-      if let data = response.data {
-        _log.error { "↘︎ payload=\(String(data: data, encoding: .utf8) ?? "<empty>")" }
-      }
+      _log.error { "<\(tag)> Requesting... [\(statusCode ?? 0)] \(NetworkError.isCancelled(networkError) ? "CANCEL" : "ERR")\n↘︎ error=\(networkError)" + (response.data == nil ? "" : "\n↘︎ payload=\(String(data: response.data!, encoding: .utf8) ?? "<empty>")") }
 
       throw networkError
     }

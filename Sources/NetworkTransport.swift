@@ -40,14 +40,14 @@ public actor NetworkTransport {
 
     requestQueue = [:]
 
-    _log.debug { "Dequeuing all requests... OK: Queue = \(requestQueue.keys)" }
+    _log.debug { "Dequeuing all requests... OK\n↘︎ queue=\(requestQueue.keys)" }
   }
 
   @discardableResult
   func addRequestToQueue<T: Request>(_ request: T, tag: String) -> T {
     requestQueue[tag] = request
 
-    _log.debug { "Enqueuing request <\(tag)>... OK: Queue = \(requestQueue.keys)" }
+    _log.debug { "Enqueuing request <\(tag)>... OK\n↘︎ queue=\(requestQueue.keys)" }
 
     return request
   }
@@ -62,7 +62,7 @@ public actor NetworkTransport {
 
     requestQueue.removeValue(forKey: tag)
 
-    _log.debug { "Dequeuing request <\(tag)>... OK: Queue = \(requestQueue.keys)" }
+    _log.debug { "Dequeuing request <\(tag)>... OK\n↘︎queue=\(requestQueue.keys)" }
 
     return request
   }

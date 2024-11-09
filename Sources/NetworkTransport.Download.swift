@@ -31,7 +31,7 @@ extension NetworkTransport {
     let tag = tag ?? generateTag(from: String(describing: url))
     let request = createRequest(from: url, to: directory, fileName: fileName, extension: ext, tag: tag, replace: replace)
 
-    _log.debug { "<\(tag)> Downloading from \(url)..." }
+    _log.debug { "<\(tag)> Downloading...\n↘︎ url=\(url)" }
 
     defer {
       removeRequestFromQueue(tag: tag)
@@ -47,14 +47,14 @@ extension NetworkTransport {
     do {
       let fileURL = try response.result.get()
 
-      _log.debug { "<\(tag)> Downloading from \(url)... [\(statusCode ?? 0)] OK: \(fileURL)" }
+      _log.debug { "<\(tag)> Downloading... [\(statusCode ?? 0)] OK\n↘︎ file=\(fileURL)" }
 
       return fileURL
     }
     catch {
       let networkError = NetworkError.from(error)
 
-      _log.error { "<\(tag)> Downloading from \(url)... [\(statusCode ?? 0)] \(NetworkError.isCancelled(networkError) ? "CANCEL" : "ERR"): \(networkError)" }
+      _log.error { "<\(tag)> Downloading... [\(statusCode ?? 0)] \(NetworkError.isCancelled(networkError) ? "CANCEL" : "ERR")\n↘︎ error=\(networkError)" }
 
       throw networkError
     }
