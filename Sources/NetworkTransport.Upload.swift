@@ -140,6 +140,9 @@ extension NetworkTransport {
       if let data = value as? Data {
         formData.append(data, withName: key, fileName: key, mimeType: data.mimeType)
       }
+      else if value is NSNull || value is Void {
+        formData.append(Data(), withName: key)
+      }
       else {
         // Convert other types to JSON
         do {
