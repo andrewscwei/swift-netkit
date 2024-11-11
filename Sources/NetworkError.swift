@@ -103,7 +103,7 @@ public enum NetworkError: Error {
   ///   - newCode: New code.
   ///   - newCause: New cause.
   /// - Returns: The cloned `NetworkError`.
-  func clone(statusCode newStatusCode: Int? = nil, code newCode: String? = nil, cause newCause: Error? = nil) -> Self {
+  public func clone(statusCode newStatusCode: Int? = nil, code newCode: String? = nil, cause newCause: Error? = nil) -> Self {
     switch self {
     case let .cancelled(code, cause):
       return .cancelled(code: newCode ?? code, cause: newCause ?? cause)
