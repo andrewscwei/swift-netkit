@@ -109,7 +109,7 @@ extension NetworkTransportPolicy {
       if let convertibleType = T.self as? (Decodable & NetworkErrorConvertible).Type {
         do {
           let decoded = try JSONDecoder().decode(convertibleType, from: data)
-          let networkError = try decoded.asNetworkError(statusCode: statusCode)
+          let networkError = try decoded.asNetworkError(statusCode: statusCode, validationError: error as? NetworkError)
 
           return .failure(networkError)
         }

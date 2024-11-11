@@ -95,6 +95,44 @@ public enum NetworkError: Error {
   /// A type of network error thrown when failing to upload packets to the
   /// server.
   public static let upload: NetworkError = .upload()
+
+  /// Creates a new `NetworkError` from itself with modified associated values.
+  ///
+  /// - Parameters:
+  ///   - newStatusCode: New status code.
+  ///   - newCode: New code.
+  ///   - newCause: New cause.
+  /// - Returns: The new `NetworkError`.
+  func with(statusCode newStatusCode: Int? = nil, code newCode: String? = nil, cause newCause: Error? = nil) -> Self {
+    switch self {
+    case let .cancelled(code, cause):
+      return .cancelled(code: newCode ?? code, cause: newCause ?? cause)
+    case let .client(statusCode, code, cause):
+      return .client(statusCode: newStatusCode ?? statusCode, code: newCode ?? code, cause: newCause ?? cause)
+    case let .decoding(statusCode, code, cause):
+      return .decoding(statusCode: newStatusCode ?? statusCode, code: newCode ?? code, cause: newCause ?? cause)
+    case let .download(statusCode, code, cause):
+      return .download(statusCode: newStatusCode ?? statusCode, code: newCode ?? code, cause: newCause ?? cause)
+    case let .encoding(statusCode, code, cause):
+      return .encoding(statusCode: newStatusCode ?? statusCode, code: newCode ?? code, cause: newCause ?? cause)
+    case let .noNetwork(code, cause):
+      return .noNetwork(code: newCode ?? code, cause: newCause ?? cause)
+    case let .noResponse(code, cause):
+      return .noResponse(code: newCode ?? code, cause: newCause ?? cause)
+    case let .server(statusCode, code, cause):
+      return .server(statusCode: newStatusCode ?? statusCode, code: newCode ?? code, cause: newCause ?? cause)
+    case let .timeout(code, cause):
+      return .timeout(code: newCode ?? code, cause: newCause ?? cause)
+    case let .tooManyRequests(statusCode, code, cause):
+      return .tooManyRequests(statusCode: newStatusCode ?? statusCode, code: newCode ?? code, cause: newCause ?? cause)
+    case let .unauthorized(statusCode, code, cause):
+      return .unauthorized(statusCode: newStatusCode ?? statusCode, code: newCode ?? code, cause: newCause ?? cause)
+    case let .unknown(statusCode, code, cause):
+      return .unknown(statusCode: newStatusCode ?? statusCode, code: newCode ?? code, cause: newCause ?? cause)
+    case let .upload(statusCode, code, cause):
+      return .upload(statusCode: newStatusCode ?? statusCode, code: newCode ?? code, cause: newCause ?? cause)
+    }
+  }
 }
 
 extension NetworkError {
@@ -220,7 +258,7 @@ extension NetworkError {
       return .unknown(cause: error)
     }
   }
-  
+
   /// Checks if the error is `NetworkError.cancelled`.
   ///
   /// - Parameter error: The error.
