@@ -96,14 +96,14 @@ public enum NetworkError: Error {
   /// server.
   public static let upload: NetworkError = .upload()
 
-  /// Creates a new `NetworkError` from itself with modified associated values.
+  /// Clones the `NetworkError` with optional modified associated values.
   ///
   /// - Parameters:
   ///   - newStatusCode: New status code.
   ///   - newCode: New code.
   ///   - newCause: New cause.
-  /// - Returns: The new `NetworkError`.
-  func with(statusCode newStatusCode: Int? = nil, code newCode: String? = nil, cause newCause: Error? = nil) -> Self {
+  /// - Returns: The cloned `NetworkError`.
+  func clone(statusCode newStatusCode: Int? = nil, code newCode: String? = nil, cause newCause: Error? = nil) -> Self {
     switch self {
     case let .cancelled(code, cause):
       return .cancelled(code: newCode ?? code, cause: newCause ?? cause)
