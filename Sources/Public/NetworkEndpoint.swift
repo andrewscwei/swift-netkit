@@ -31,10 +31,10 @@ extension NetworkEndpoint {
 
   /// Path of this endpoint (excluding the host, i.e. `/users/get`).
   public var path: String { pathDescriptor.path }
-  
+
   /// Request timeout in seconds.
   public var timeout: TimeInterval { 60 }
-  
+
   /// Request headers.
   public var headers: [String: String] {
     [
@@ -42,7 +42,7 @@ extension NetworkEndpoint {
       "Content-Type": "application/json",
     ]
   }
-  
+
   public var parameters: [String: any Sendable]? { nil }
 
   public var description: String { "[\(method.rawValue.uppercased())] \(Self.host)\(path)" }
